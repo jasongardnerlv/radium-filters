@@ -1,0 +1,269 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-collapse/iron-collapse.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../radium-combo/radium-combo.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="radium-filter-behavior.html">
+<dom-module id="radium-filter-panel">
+  <style is="custom-style">
+    :host {
+      background-color: #FFFFFF;
+      width: 250px;
+      border-right: 1px solid #eee;
+      overflow-y: auto;
+    }
+    @media only screen and (min-width: 1081px) {
+      :host {
+        border-right: none;
+        box-shadow: rgba(0, 0, 0, 0.0980392) 0px 2px 4px, rgba(0, 0, 0, 0.0980392) 0px 0px 3px;
+      }
+    }
+    :host(:not([custom-filter])) {
+      height: 100%;
+    }
+    .filter-wrapper {
+      color: rgba(0, 0, 0, 0.87) !important;
+    }
+    :host > ::content .filter-row {
+      padding: 10px 16px;
+      border-bottom: 1px solid #EDEDED;
+    }
+    :host > ::content .filter-row > div {
+      padding: 8px 0px;
+    }
+    :host > ::content .filter-row .checkbox-row {
+      padding: 4px 0px;
+    }
+    :host > ::content .filter-row .checkbox-row paper-checkbox {
+      min-width: 18px;
+    }
+    :host > ::content .filter-row .checkbox-row > div {
+      padding: 4px 0px 0px 8px;
+    }
+    :host > ::content .filter-row .floated-label-placeholder {
+      display:none;
+    }
+    :host > ::content .typo-subheader {
+      font-size: 16px !important;
+      font-weight: 400 !important;
+    }
+    :host > ::content .typo-body2 {
+      font-size: 14px !important;
+      font-weight: 500 !important;
+    }
+    :host > ::content .typo-body1 {
+      font-size: 14px !important;
+      font-weight: 400 !important;
+    }
+  </style>
+  <template>
+    <div class="filter-wrapper">
+      <div class="typo-subheader filter-row">Filters</div>
+      <div id="filter-container"></div>
+    </div>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    Polymer({
+      is: 'radium-filter-panel',
+      properties: {
+        filters: {
+          type: Array,
+          value: function() { return []; },
+          observer: '_filtersChanged'
+        },
+        _previousPath: {
+          type: String,
+          value: ''
+        }
+      },
+      behaviors: [RadiumFilterBehavior],
+      _inputChanged: function(e) {
+        var key = e.path[0].getAttribute('data-filter');
+        var value = e.detail.value;
+        this.removeFilterByKey(key);
+        if (value && value !== null && value !== '') {
+          this.addFilter(key + ':' + value);
+        }
+      },
+      _checkboxChanged: function(e) {
+        var checked = e.path[0].getAttribute('checked') !== null;
+        var filter = e.path[0].getAttribute('data-filter');
+        if (checked === true) {
+          this.addFilter(filter);
+        } else {
+          this.removeFilter(filter);
+        }
+      },
+      _dropdownChanged: function(e) {
+        var key = e.path[0].getAttribute('data-filter');
+        var value = e.detail.value;
+        this.removeFilterByKey(key);
+        if (value && value !== null && value !== '') {
+          this.addFilter(key + ':' + value);
+        }
+      },
+      _filtersChanged: function(oldVal, newVal) {
+        var filterContainer = this.$['filter-container'];
+        if (filterContainer.childNodes.length > 0) {
+          for (var f = filterContainer.childNodes.length - 1; f >= 0; f--) {
+            filterContainer.removeChild(filterContainer.childNodes[f]);
+          }
+        }
+        for (var i = 0; i < this.filters.length; i++) {
+          var filter = this.filters[i];
+          var filterRow = document.createElement('div');
+          filterRow.className += 'filter-row';
+          var lbl = document.createElement('div');
+          lbl.innerHTML = filter.label;
+          lbl.className += 'typo-body2';
+          lbl.style.cursor = 'pointer';
+          var clps = document.createElement('iron-collapse');
+          clps.id = 'filter' + i;
+          clps.setAttribute('opened', 'true');
+          this._assignCollapseHandler(lbl, i);
+          filterRow.appendChild(lbl);
+          if (filter.type === 'input') {
+            clps.appendChild(this._createInputControl(filter));
+          } else if (filter.type === 'dropdown') {
+            clps.appendChild(this._createDropdownControl(filter));
+          } else {
+            for (var j = 0; j < filter.values.length; j++) {
+              if (filter.type === 'checkboxlist') {
+                clps.appendChild(this._createCheckboxListControl(filter.key, filter.values[j], filter.options));
+              } else {
+                console.warn('Unknown filter control type: ' + filter.type);
+              }
+            }
+          }
+          filterRow.appendChild(clps);
+          filterContainer.appendChild(filterRow);
+          this._evaluateQueryString();
+        }
+      },
+      _assignCollapseHandler: function(ctl, idx) {
+        ctl.addEventListener('click', function(e) {
+          Polymer.dom(this.root).querySelector('iron-collapse#filter' + idx).toggle();
+        }.bind(this));
+      },
+      _createInputControl: function(filter) {
+        var input = document.createElement('paper-input');
+        input.setAttribute('data-filter', filter.key);
+        this._applyOptions(input, filter.options || {});
+        if (filter.options && typeof filter.options.value !== 'undefined') {
+          input.value = filter.options.value;
+          var value = filter.options.value;
+          if (value && value !== null && value !== '') {
+            this.addFilter(filter.key + ':' + value);
+          }
+        }
+        input.addEventListener('value-changed', this._inputChanged.bind(this));
+        return input;
+      },
+      _createCheckboxListControl: function(key, value, opts) {
+        //todo deprecate this, should force the use of an object
+        if (typeof value !== 'object') {
+          value = {label:value,value:value};
+        }
+        var cl = document.createElement('div');
+        cl.className += 'checkbox-row horizontal center layout';
+        var cb = document.createElement('paper-checkbox');
+        cb.setAttribute('data-filter', key + ':' + value.value);
+        cb.setAttribute('for', '');
+        this._applyOptions(cb, opts || {});
+        cb.addEventListener('change', this._checkboxChanged.bind(this));
+        cl.appendChild(cb);
+        var val = document.createElement('div');
+        val.className += 'typo-body1';
+        val.innerHTML = value.label;
+        cl.appendChild(val);
+        return cl;
+      },
+      _createDropdownControl: function(filter) {
+        var dd = document.createElement('radium-combo');
+        dd.setAttribute('data-filter', filter.key);
+        dd.setAttribute('include-empty', false);
+        dd.options = filter.values;
+        this._applyOptions(dd, filter.options || {});
+        dd.addEventListener('option-change', this._dropdownChanged.bind(this));
+        return dd;
+      },
+      _applyOptions: function(ctrl, opts) {
+        for (var opt in opts) {
+          ctrl[opt] = opts[opt];
+        }
+      },
+      _setControlSelected: function(control) {
+        switch (control.nodeName.toLowerCase()) {
+          case 'paper-checkbox':
+            control.setAttribute('checked', '');
+            break;
+          default:
+            console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
+            break;
+        }
+      },
+      _setControlValue: function(control, value) {
+        switch (control.nodeName.toLowerCase()) {
+          case 'paper-input':
+            control.value = value;
+            break;
+          case 'radium-combo':
+            control.setValue(value);
+            break;
+          default:
+            console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
+            break;
+        }
+      },
+      _clearControl: function(control) {
+        switch (control.nodeName.toLowerCase()) {
+          case 'paper-input':
+            control.value = '';
+            break;
+          case 'paper-checkbox':
+            control.removeAttribute('checked');
+            break;
+          case 'radium-combo':
+            control.clearSelection();
+            break;
+          default:
+            console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
+            break;
+        }
+      },
+      _evaluateQueryString: function() {
+        var newPath = window.location.pathname + window.location.hash.split('?')[0];
+        if (this._previousPath === '' || this._previousPath === newPath) {
+          var qsFilters = this.getCurrentFilters();
+          var controls = this.$['filter-container'].querySelectorAll('*[data-filter]');
+          for (var i = 0; i < controls.length; i++) {
+            var control = controls[i];
+            var found = false;
+            qsFilters.forEach(function (filter) {
+              var parts = filter.split(':');
+              if (control.getAttribute('data-filter') === filter) {
+                found = true;
+                this._setControlSelected(control);
+              } else if (control.getAttribute('data-filter') === parts[0]) {
+                found = true;
+                this._setControlValue(control, parts[1]);
+              }
+            }.bind(this));
+            if (found === false) {
+              this._clearControl(control);
+            }
+          }
+        }
+        this._previousPath = newPath;
+      },
+      ready: function() {
+        window.addEventListener('hashchange', this._evaluateQueryString.bind(this));
+        this.async(function(){this._evaluateQueryString();}.bind(this), 500);
+      }
+    });
+  })();
+</script>
+
