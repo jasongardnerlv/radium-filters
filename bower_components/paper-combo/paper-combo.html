@@ -1,0 +1,531 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-dropdown/iron-dropdown.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-selector/iron-selector.html">
+<link rel="import" href="../paper-input/paper-input-container.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<!--
+Material Design Dropdown/Typeahead/Combobox control
+
+@demo demo/index.html
+-->
+<dom-module id="paper-combo">
+  <style is="custom-style">
+    #input {
+      cursor: pointer;
+    }
+    :host([type='typeahead']) #input {
+      cursor: text;
+    }
+    :host([type='combobox']) #input {
+      cursor: text;
+    }
+    #dropdown {
+      margin-top: 56px;
+      background-color: #FFFFFF;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    }
+    #dropdown-icon {
+      position: absolute;
+      right: 0;
+      cursor: pointer;
+    }
+    iron-selector {
+      cursor: pointer;
+    }
+    .iron-selected {
+      font-weight: bold;
+      background-color: #F5F5F5;
+    }
+    paper-item:hover {
+     background-color: #EEEEEE;
+    }
+    paper-input-container:focus {
+     outline: 0;
+    }
+  </style>
+  <template>
+    <paper-input-container id="input-container" on-click="_dropdownAction" disabled$="[[disabled]]" tabindex="0"
+      on-keydown="_containerKeyHandler">
+      <label>[[label]]</label>
+      <input id="input" is="iron-input" type="text" on-input="_inputValueChanged" on-blur="_onInputBlur"
+        on-keydown="_keyHandler" disabled class="paper-input-input"></input>
+      <iron-icon id="dropdown-icon" icon="[[_dropdownIcon()]]"></iron-icon>
+    </paper-input-container>
+    <iron-dropdown id="dropdown" on-iron-overlay-closed="_dropdownClosed">
+      <div class="dropdown-content">
+        <iron-selector id="selector" attrForSelected="value">
+          <template is="dom-if" if="[[_checkShowEmpty(_showEmpty, type)]]">
+            <paper-item on-click="_hideDropdown" value="">
+              <span>[[emptyOptionLabel]]</span>
+            </paper-item>
+          </template>
+          <template is="dom-repeat" items="[[_filteredOptions]]">
+            <paper-item on-click="_hideDropdown" value="[[item.__value]]">
+              <span>[[item.__label]]</span>
+            </paper-item>
+          </template>
+        </iron-selector>
+      </div>
+    </iron-dropdown>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    Polymer({
+      is: 'paper-combo',
+
+      /**
+       * Fired when the selected option has changed
+       *
+       * @event option-change
+       */
+
+      behaviors: [
+        Polymer.IronSelectableBehavior
+      ],
+      properties: {
+        /**
+         * Optional floating label for the input control
+         */
+        label: {
+          type: String,
+          value: ""
+        },
+        /**
+         * Whether or not the control should be disabled
+         */
+        disabled: {
+          type: Boolean,
+          default: false,
+          reflectToAttribute: true,
+          observer: '_disabledChanged'
+        },
+        /**
+         * Currently selected value
+         */
+        value: {
+          type: String,
+          value: '',
+          notify: true,
+          observer: '_valueChanged'
+        },
+        /**
+         * Property on the option objects to use as the display label
+         */
+        labelProperty: {
+          type: String,
+          value: 'label'
+        },
+        /**
+         * Property on the option objects to use as the value
+         */
+        valueProperty: {
+          type: String,
+          value: 'value'
+        },
+        /**
+         * List of options to select from
+         * Can be simple strings, or objects with label/value properties
+         */
+        options: {
+          type: Array,
+          value: function() {return [];},
+          observer: '_optionsChanged'
+        },
+        /**
+         * Optional placeholder text if nothing is selected
+         */
+        emptyOptionLabel: {
+          type: String
+        },
+        /**
+         * The type of selection control
+         * Choices are:
+         *    dropdown
+         *    typeahead
+         *    combobox
+         */
+        type: {
+          type: String,
+          value: '',
+          observer: '_typeChanged'
+        },
+        /**
+         * Whether or not to include an "empty" option in the list, allowing the
+         * user to unselect
+         */
+        includeEmpty: {
+          type: String,
+          value: 'true',
+          observer: '_emptyChanged'
+        },
+        _showEmpty: {
+          type: Boolean,
+          value: true
+        },
+        _optionsInternal: {
+          type: Array,
+          value: function() {return [];}
+        },
+        _filteredOptions: {
+          type: Array,
+          value: function() {return [];}
+        },
+        _open: {
+          type: Boolean,
+          default: false
+        },
+        _boundOnCaptureClick: {
+          type: Function,
+          value: function() {
+            return this._onCaptureClick.bind(this);
+          }
+        }
+      },
+      listeners: {
+        'tap': '_updateSelected'
+      },
+      observers: [
+        '_optionsSplicesChanged(options.splices)'
+      ],
+      _boundResizeHandler: null,
+      _valueChanged: function(v, old) {
+        var normalized;
+        if (this._isObject(v)) {
+          normalized = v;
+        } else {
+          var vm = this._findValueMatch(v);
+          if (vm === null) {
+            this._setInputValue('');
+            return;
+          }
+          this.value = vm.match;
+        }
+        this._setInputValue(this.value.__label);
+      },
+      _typeChanged: function(v) {
+        if (v) {
+          switch (v.toLowerCase()) {
+            case 'combobox':
+              this._showEmpty = false;
+              this.$['input-container'].setAttribute('tabindex', '-1');
+              this.$.input.removeAttribute('disabled');
+              break;
+            case 'typeahead':
+              this._showEmpty = false;
+              this.$['input-container'].setAttribute('tabindex', '-1');
+              this.$.input.removeAttribute('disabled');
+              break;
+            default:
+              this.$.input.setAttribute('disabled', '');
+              this.$['input-container'].setAttribute('tabindex', '0');
+              break;
+          }
+        }
+        if (this.disabled === true) {
+          this.$['input-container'].setAttribute('tabindex', '-1');
+        }
+      },
+      _disabledChanged: function() {
+        this._typeChanged(this.type);
+      },
+      _emptyChanged: function(v) {
+        if (v === 'false') {
+          this._showEmpty = false;
+          if (this._filteredOptions && this._filteredOptions.length > 0 && this._isDropdown()) {
+            this.value = this._filteredOptions[0];
+          }
+        }
+      },
+      _optionsChanged: function(v) {
+        var newArr = [];
+        if (v.length > 0) {
+          for (var i = 0; i < v.length; i++) {
+            var val = v[i];
+            if (this._isObject(val)) {
+              val.__label = val[this.labelProperty];
+              val.__value = val[this.valueProperty];
+              newArr.push(val);
+            } else {
+              newArr.push({__label:val,__value:val});
+            }
+          }
+        }
+        this._filteredOptions = this._optionsInternal = newArr;
+        if (this._filteredOptions.length > 0 && this._showEmpty === false && this._isDropdown()) {
+          this.value = this._filteredOptions[0];
+        }
+      },
+      _optionsSplicesChanged: function(v) {
+        if (v !== undefined && v.indexSplices.length > 0) {
+          this._optionsChanged(v.indexSplices[v.indexSplices.length - 1].object);
+        }
+      },
+      _isDropdown: function() {
+        return (this.type.toLowerCase() !== 'combobox' && this.type.toLowerCase() !== 'typeahead');
+      },
+      _checkShowEmpty: function(e, t) {
+        return (e === true && this._isDropdown);
+      },
+      _dropdownIcon: function() {
+        if (this._open) {
+          return 'arrow-drop-up';
+        } else {
+          return 'arrow-drop-down';
+        }
+      },
+      _dropdownAction: function(e) {
+        if (this._open) {
+          this._hideDropdown();
+        } else {
+          this._openDropdown();
+        }
+      },
+      _onCaptureClick: function(e) {
+        var node = e.target;
+        while (node != null) {
+          if (node == this) {
+            break;
+          }
+          node = node.parentNode;
+        }
+        if (node === null) {
+          this.async(function() {
+            this._hideDropdown();
+          }, 10);
+        }
+      },
+      _openDropdown : function() {
+        if (this._open === false) {
+          this._open = true;
+          document.addEventListener('click', this._boundOnCaptureClick, true);
+          this.$.dropdown.style.width = this.$['input-container'].offsetWidth + 'px';
+          this.$.dropdown.positionTarget = this;
+          this.$.dropdown.open();
+        }
+      },
+      _hideDropdown : function() {
+        if (this._open === true) {
+          this._open = false;
+          document.removeEventListener('click', this._boundOnCaptureClick, true);
+          this.$.dropdown.close();
+        }
+      },
+      _dropdownClosed: function() {
+        this._open = false;
+      },
+      _handleFloatingLabel: function(value) {
+        this.$['input-container']._inputHasContent = !(!value || value === null || value === '');
+      },
+      _inputValueChanged: function(e) {
+        var input = e.target.value;
+        this._handleFloatingLabel(input);
+        this._filterOptions(input);
+        this._openDropdown();
+      },
+      _applyValueFromInput: function() {
+        this.setValueFromLabel(this.$.input.value, true);
+      },
+      _filterOptions: function(input) {
+        if (!input || input === null || input === '') {
+          this._filteredOptions = this._optionsInternal;
+          return;
+        }
+        var newArr = [];
+        for (var i = 0; i < this._optionsInternal.length; i++) {
+          var opt = this._optionsInternal[i];
+          if (opt.__label.toLowerCase().indexOf(input.toLowerCase()) === 0) {
+            newArr.push(opt);
+          }
+        }
+        this._filteredOptions = newArr;
+      },
+      _updateSelected: function(e) {
+        if (e !== null && (e.target.nodeName.toLowerCase() === 'paper-item' ||
+            e.target.parentNode.nodeName.toLowerCase() === 'paper-item')) {
+          var selIdx = this.$.selector.selected;
+          if (selIdx !== undefined) {
+            if (this._showEmpty === false) {
+              this._updateAndDispatch(this._filteredOptions[selIdx], true);
+            } else {
+              if (selIdx === 0) {
+                this._updateAndDispatch('', true);
+              } else {
+                this._updateAndDispatch(this._filteredOptions[selIdx - 1], true);
+              }
+            }
+          }
+        }
+      },
+      _updateAndDispatch: function(value, dispatch) {
+        this.value = value;
+        if (typeof dispatch !== 'undefined' && dispatch === true) {
+          this.fire('option-change', {label:value.__label, value:value.__value});
+        }
+      },
+      _applyInitialValue: function() {
+        if (this.value && this.value !== '') {
+          var idx = this._optionsInternal.indexOf(this.value);
+          if (this._showEmpty === true) {
+            idx = idx + 1;
+          }
+          this.$.selector.select(idx);
+        }
+      },
+      _onInputBlur: function() {
+        this._applyValueFromInput();
+      },
+      _containerKeyHandler: function(e) {
+        if (document.activeElement === this.$['input-container']) {
+          if (this._open === false &&
+              (e.keyIdentifier.toLowerCase() === 'enter' || e.keyIdentifier.toLowerCase() === 'u+0020')) {
+            this._openDropdown();
+          } else {
+            this._keyHandler(e);
+          }
+        }
+      },
+      _keyHandler: function(e) {
+        if (e.keyIdentifier.toLowerCase() === 'enter') {
+          this._applyValueFromInput();
+          return;
+        }
+        if (this._open === true && e.keyIdentifier.toLowerCase() === 'u+0009') {
+          e.preventDefault();
+          return;
+        }
+        this._handleKeyboardArrows(e);
+      },
+      _handleKeyboardArrows: function(e) {
+        if (e.keyIdentifier.toLowerCase() !== 'up' && e.keyIdentifier.toLowerCase() !== 'down') {
+          return;
+        }
+        var isUp = (e.keyIdentifier.toLowerCase() === 'up');
+        this._openDropdown();
+        var idx = (typeof this.$.selector.selected === 'undefined') ? -1 : this.$.selector.selected;
+        if (isUp === true) {
+          idx -= 1;
+          if (idx < 0) {
+            idx = 0;
+          }
+        } else {
+          idx += 1;
+          if (this._showEmpty === true) {
+            if (idx >= this._filteredOptions.length + 1) {
+              idx = this._filteredOptions.length;
+            }
+          } else {
+            if (idx >= this._filteredOptions.length) {
+              idx = this._filteredOptions.length - 1;
+            }
+          }
+        }
+
+        this.$.selector.selected = idx;
+        this.value = this._filteredOptions[(this._showEmpty === true) ? idx - 1 : idx];
+        var itemHeight = 49;
+        var numVisible = Math.floor(this.$.selector.parentNode.offsetHeight / itemHeight);
+        if (isUp) {
+          this.$.selector.parentNode.scrollTop = (idx < this._filteredOptions.length - numVisible) ? idx * itemHeight :
+                                        ((this._filteredOptions.length - 1) * itemHeight);
+        } else {
+          this.$.selector.parentNode.scrollTop = (idx >= numVisible) ? idx * itemHeight : 0;
+        }
+      },
+      _findValueMatch: function(v) {
+        if ((v === null) || (v === undefined))
+        {
+          return null;
+        }
+
+        if (this._optionsInternal) {
+          for (var idx = 0; idx < this._optionsInternal.length; idx++) {
+            var opt = this._optionsInternal[idx];
+            if (opt && opt.__value.toString() === v.toString()) {
+              return {match:opt, index:idx};
+            }
+          }
+        }
+        return null;
+      },
+      _isObject: function(val) {
+        if (val === null) { return false;}
+        return ( (typeof val === 'function') || (typeof val === 'object') );
+      },
+      _setInputValue: function(v) {
+        this._handleFloatingLabel(v);
+        this.$.input.value = v;
+      },
+      /**
+       * Use the provided label to select an item
+       *
+       * @param {String} lbl The value to make selected
+       * @param {Boolean} dispatch Whether or not to send a change event when deselecting
+       */
+      setValueFromLabel: function(lbl, dispatch) {
+        var match = null;
+        var idx = 0;
+        for (idx; idx < this._optionsInternal.length; idx++) {
+          var opt = this._optionsInternal[idx];
+          if (opt && opt.__label.toLowerCase() === lbl.toLowerCase()) {
+            match = opt;
+            break;
+          }
+        }
+        if (match !== null) {
+          this._updateAndDispatch(match, dispatch);
+          this.$.selector.select(idx);
+        } else if (this.type.toLowerCase() === 'combobox') {
+          this._updateAndDispatch({__label:lbl,__value:undefined}, dispatch);
+          this.$.selector.select(-1);
+        } else {
+          this.clearSelection(dispatch);
+        }
+        this._hideDropdown();
+      },
+      /**
+       * Use the provided value to select an item
+       *
+       * @param {*} v The value to make selected
+       * @param {Boolean} dispatch Whether or not to send a change event when selecting
+       */
+      setValue: function(v, dispatch) {
+        var vm = this._findValueMatch(v);
+        if (vm !== null) {
+          this._updateAndDispatch(vm.match, dispatch);
+          this.$.selector.select(vm.index);
+        } else if (this.type.toLowerCase() === 'combobox') {
+          this._updateAndDispatch({__label:v,__value:undefined}, dispatch);
+          this.$.selector.select(-1);
+        } else {
+          this.clearSelection(dispatch);
+        }
+        this._hideDropdown();
+      },
+      /**
+       * Clear the current selection
+       *
+       * @param {Boolean} dispatch Whether or not to send a change event when deselecting
+       */
+      clearSelection: function(dispatch) {
+        this._setInputValue('');
+        this._updateAndDispatch('', dispatch);
+        this.$.selector.select(-1);
+      },
+      attached: function() {
+        this.$.dropdown.positionTarget = null;
+        this._boundResizeHandler = this._hideDropdown.bind(this);
+        window.addEventListener('resize:end', this._boundResizeHandler, false);
+      },
+      detached: function() {
+        window.removeEventListener('resize:end', this._boundResizeHandler, false);
+      },
+      ready: function() {
+        this.async(function() { this._applyInitialValue(); });
+        this._open = false;
+      }
+    });
+  })();
+</script>

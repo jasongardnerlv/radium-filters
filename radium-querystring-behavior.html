@@ -1,0 +1,158 @@
+<script>
+
+/**
+ * Helper functions for manipulating the query string
+ *
+ * @polymerBehavior
+ */
+  RadiumQueryStringBehavior = {
+
+    /**
+     * Retrieve the current query string values as a dictionary.
+     *
+     * @param {Object} defaults Dictionary of defaults to use.
+     * @return {Object} Dictionary of query string key/values.
+     */
+    getQueryParams: function(defaults) {
+      var params = {};
+      defaults = defaults || {};
+      var qs = document.location.hash.split('?')[1];
+      if (qs !== undefined) {
+        if (qs[qs.length - 1] === '/') {
+          qs = qs.substring(0, qs.length - 1);
+        }
+        qs.split('&').forEach(function(paramString) {
+          var pArr = paramString.split('=');
+          if (!params.hasOwnProperty(pArr[0])) {
+            params[pArr[0]] = [];
+          }
+          if (pArr[1] !== undefined) {
+            params[pArr[0]].push(decodeURIComponent(pArr[1]));
+          }
+        });
+      }
+      for (var key in defaults) {
+        if (defaults.hasOwnProperty(key) && params[key] === undefined) {
+          params[key] = defaults[key];
+        }
+      }
+      return params;
+    },
+
+    /**
+     * Remove a query string param.
+     *
+     * @param {String} queryKey The key of the param to be removed.
+     * @param {String} filterKey The value prefix of the param to be removed.
+     * @param {String} value If specified, will only remove a param with matching value,
+     * otherwise all instances of the key and prefix are removed.
+     */
+    removeQueryParamByKey: function(queryKey, filterKey, value) {
+      var hash = document.location.hash.split('?');
+
+      if (hash[1] !== undefined) {
+
+        var params = hash[1].split('&').filter(function(param) {
+          var pair = param.split('=');
+          if (pair[0] === queryKey) {
+            var keyVal = pair[1].split(':');
+            if (keyVal[0] === filterKey && (value === undefined || keyVal[1] === value)) {
+              return false;
+            }
+            return true;
+          } else {
+            return param !== '/';
+          }
+        });
+
+        if (params.length) {
+          hash[0] += '?' + params.join('&');
+        }
+
+        document.location.hash = hash[0];
+      }
+    },
+
+
+    /**
+     * Remove a query string param.
+     *
+     * @param {String} queryKey The key of the param to be removed.
+     * @param {String} value If specified, will only remove a param with matching value,
+     * otherwise all instances of the key are removed.
+     */
+    removeQueryParam: function(queryKey, value) {
+      var params = [];
+      var qs = document.location.hash.split('?')[1];
+      if (qs !== undefined) {
+        if (qs[qs.length - 1] === '/') {
+          qs = qs.substring(0, qs.length - 1);
+        }
+        qs.split('&').forEach(function(param) {
+          params.push(param.split('='));
+        });
+      }
+
+      for (var i = params.length - 1; i >= 0; i--) {
+        var param = params[i];
+        if (param[0] === queryKey) {
+          if (value === undefined || param[1] === value) {
+            params.splice(i, 1);
+          }
+        }
+      }
+
+      var newQs = '?';
+      params.forEach(function(param) {
+        newQs += param[0] + '=' + param[1] + '&';
+      }.bind(self));
+      newQs = newQs.substr(0, newQs.length - 1);
+      document.location.hash = document.location.hash.split('?')[0] + newQs;
+    },
+
+    /**
+     * Add a query string param.
+     *
+     * @param {String} queryKey The key of the param to be added.
+     * @param {String} value The value of the param to be added.
+     */
+    addQueryParam: function(queryKey, value) {
+      var keyValPair = [null, value];
+      if (typeof value == 'string' && value.indexOf(':') > -1) {
+        keyValPair = value.split(':');
+      }
+      this.addQueryParamByKey(queryKey, keyValPair[0], keyValPair[1]);
+    },
+
+    /**
+     * Add a query string param, with the desired value prefix.
+     *
+     * @param {String} queryKey The key of the param to be added.
+     * @param {String} filterKey The value prefix of the param to be added.
+     * @param {String} value The value of the param to be added.
+     */
+    addQueryParamByKey: function(queryKey, filterKey, value) {
+      value = encodeURIComponent(value);
+      filterKey = filterKey || '';
+      if (filterKey.length) {
+        filterKey += ':';
+      }
+      var queryParam = queryKey + '=' + filterKey + value;
+      if (document.location.hash.indexOf(queryParam) == -1) {
+        var prefix = document.location.hash.indexOf('?') > -1 ? '&' : '?';
+        document.location.hash += prefix + queryParam;
+      }
+    },
+
+    /**
+     * Remove all query string params.
+     */
+    removeAllQueryParams: function() {
+      var hash = document.location.hash;
+      if (hash.indexOf('?') >= 0) {
+        document.location.hash = hash.substring(0, hash.indexOf('?'));
+      }
+    }
+  };
+
+</script>

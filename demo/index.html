@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>radium-filters demo</title>
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="../../iron-flex-layout/classes/iron-flex-layout.html">
+  <link rel="import" href="../radium-filter-bar.html">
+  <link rel="import" href="../radium-filter-panel.html">
+  <style>body { font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif; }</style>
+  <style is="custom-style">
+    #panelWrapper {
+      width: 240px;
+      border: 1px solid #cccccc;
+    }
+    #filter-results {
+      padding: 0px 24px 24px;
+    }
+  </style>
+</head>
+<body unresolved>
+  <template is="dom-bind" id="app">
+    <div class="fit horizontal layout">
+      <div id="panelWrapper">
+        <radium-filter-panel id="filterpanel" filters="{{_filters}}"></radium-filter-panel>
+      </div>
+      <div class="flex">
+        <radium-filter-bar id="filterbar" filters="{{_filters}}" on-filter-change="_handleFilterChange"></radium-filter-bar>
+        <div>
+          <div id="filter-results">
+            <h2>radium-filters demo</h2>
+            <div style="text-decoration:underline"><b>Selected States</b></div>
+            <template is="dom-repeat" items="{{_selectedStates}}">
+              <div>{{item}}</div>
+            </template>
+            <br/>
+            <div style="text-decoration:underline"><b>Selected Sales Rep</b></div>
+            <div>{{_selectedRep}}</div>
+            <br/>
+            <div style="text-decoration:underline"><b>Selected Quarter</b></div>
+            <div>{{_selectedQtr}}</div>
+            <br/>
+            <div style="text-decoration:underline"><b>Ad-hoc Filter</b></div>
+            <div>{{_adhoc}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script>
+    window.location.hash = 'foo'; //right now, we only support hash routing query strings
+    app._selectedStates = [];
+    app._selectedRep = '';
+    app._selectedQtr = '';
+    app._adhoc = '';
+    app._handleFilterChange = function(e) {
+      app._selectedStates = [];
+      app._selectedRep = '';
+      app._selectedQtr = '';
+      app._adhoc = '';
+      for (var i=0;i<e.detail.length;i++) {
+        var filter = e.detail[i];
+        switch (filter.key) {
+          case 'state':
+            app.push('_selectedStates', filter.label);
+            break;
+          case 'rep':
+            app._selectedRep = filter.label;
+            break;
+          case 'qtr':
+            app._selectedQtr = filter.label;
+            break;
+          case 'adhoc':
+            app._adhoc = filter.value;
+            break;
+        }
+      }
+    };
+    app._filters = [{
+                    type: 'checkboxlist',
+                    label: 'State(s)',
+                    key: 'state',
+                    values: [
+                              {label:'California', value:'California'},
+                              {label:'Florida', value:'Florida'},
+                              {label:'Nevada', value:'Nevada'},
+                              {label:'New York', value:'New York'},
+                              {label:'Texas', value:'Texas'}
+                            ]
+                   },
+                   {
+                    type: 'dropdown',
+                    label: 'Sales Rep',
+                    key: 'rep',
+                    values: [
+                              {label:'John', value:'John'},
+                              {label:'Bill', value:'Bill'},
+                              {label:'Sharon', value:'Sharon'},
+                              {label:'Mary', value:'Mary'},
+                              {label:'George', value:'George'}
+                            ],
+                   },
+                   {
+                    type: 'dropdown',
+                    label: 'Quarter',
+                    key: 'qtr',
+                    values: [
+                              {label:'1st Quarter', value:1},
+                              {label:'2nd Quarter', value:2},
+                              {label:'3rd Quarter', value:3},
+                              {label:'4th Quarter', value:4}
+                            ]
+                   },
+                   {
+                    type: 'input',
+                    label: 'Ad-hoc Filter',
+                    key: 'adhoc'
+                   }];
+  </script>
+</body>
+</html>

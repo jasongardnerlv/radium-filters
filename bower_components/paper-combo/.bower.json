@@ -1,0 +1,47 @@
+{
+  "name": "paper-combo",
+  "description": "Material Design Dropdown/Typeahead/Combobox control",
+  "authors": [
+    "jason gardner <jason.gardner.lv@gmail.com>"
+  ],
+  "keywords": [
+    "paper",
+    "select",
+    "combobox",
+    "dropdown"
+  ],
+  "main": [
+    "paper-combo.html"
+  ],
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jasongardnerlv/paper-combo.git"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/jasongardnerlv/paper-combo",
+  "ignore": [],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.2.3",
+    "iron-dropdown": "PolymerElements/iron-dropdown#^1.0.6",
+    "iron-icon": "PolymerElements/iron-icon#^1.0.7",
+    "iron-icons": "PolymerElements/iron-icons#^1.0.4",
+    "iron-selector": "PolymerElements/iron-selector#^1.0.8",
+    "paper-input": "PolymerElements/paper-input#^1.1.2",
+    "paper-item": "PolymerElements/paper-item#^1.0.5"
+  },
+  "devDependencies": {
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+    "web-component-tester": "Polymer/web-component-tester#^3.3.0",
+    "test-fixture": "PolymerElements/test-fixture#^1.0.0"
+  },
+  "_release": "1b0926a71d",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "1b0926a71dfcec3276664713ef06fcd7fcd9f7b3"
+  },
+  "_source": "git://github.com/jasongardnerlv/paper-combo.git",
+  "_target": "master",
+  "_originalSource": "jasongardnerlv/paper-combo"
+}
