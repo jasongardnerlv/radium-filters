@@ -2,7 +2,7 @@
 <link rel="import" href="../iron-collapse/iron-collapse.html">
 <link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../paper-checkbox/paper-checkbox.html">
-<link rel="import" href="../paper-combo/paper-combo.html">
+<link rel="import" href="../radium-combo/radium-combo.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="radium-filter-behavior.html">
 <dom-module id="radium-filter-panel">
@@ -182,7 +182,7 @@
         return cl;
       },
       _createDropdownControl: function(filter) {
-        var dd = document.createElement('paper-combo');
+        var dd = document.createElement('radium-combo');
         dd.setAttribute('data-filter', filter.key);
         dd.setAttribute('include-empty', false);
         dd.options = filter.values;
@@ -210,7 +210,7 @@
           case 'paper-input':
             control.value = value;
             break;
-          case 'paper-combo':
+          case 'radium-combo':
             control.setValue(value);
             break;
           default:
@@ -226,7 +226,7 @@
           case 'paper-checkbox':
             control.removeAttribute('checked');
             break;
-          case 'paper-combo':
+          case 'radium-combo':
             control.clearSelection();
             break;
           default:
