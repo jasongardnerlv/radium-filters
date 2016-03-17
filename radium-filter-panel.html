@@ -74,133 +74,130 @@ Side Panel Polymer element for doing filters / faceted search.
   (function() {
     Polymer({
       is: 'radium-filter-panel',
-      properties: {
-        filters: {
-          type: Array,
-          value: function() { return []; },
-          observer: '_filtersChanged'
-        },
-        _previousPath: {
-          type: String,
-          value: ''
-        }
-      },
+
       behaviors: [RadiumFilterBehavior],
-      _inputChanged: function(e) {
-        var key = e.path[0].getAttribute('data-filter');
-        var value = e.detail.value;
-        this.removeFilterByKey(key);
-        if (value && value !== null && value !== '') {
-          this.addFilter(key + ':' + value);
-        }
-      },
-      _checkboxChanged: function(e) {
-        var checked = e.path[0].getAttribute('checked') !== null;
-        var filter = e.path[0].getAttribute('data-filter');
-        if (checked === true) {
-          this.addFilter(filter);
-        } else {
-          this.removeFilter(filter);
-        }
-      },
-      _dropdownChanged: function(e) {
-        var key = e.path[0].getAttribute('data-filter');
-        var value = e.detail.value;
-        this.removeFilterByKey(key);
-        if (value && value !== null && value !== '') {
-          this.addFilter(key + ':' + value);
-        }
-      },
-      _filtersChanged: function(oldVal, newVal) {
+
+      observers: [
+        '_filtersChanged(filters)',
+        '_termsChanged(terms)'
+      ],
+
+      _createControls: function() {
         var filterContainer = this.$['filter-container'];
-        if (filterContainer.childNodes.length > 0) {
-          for (var f = filterContainer.childNodes.length - 1; f >= 0; f--) {
-            filterContainer.removeChild(filterContainer.childNodes[f]);
-          }
+        while (filterContainer.hasChildNodes()) {
+          filterContainer.removeChild(filterContainer.lastChild);
         }
-        for (var i = 0; i < this.filters.length; i++) {
-          var filter = this.filters[i];
+        this.filters.forEach(function(filter, filterIndex) {
           var filterRow = document.createElement('div');
           filterRow.className += 'filter-row';
-          var lbl = document.createElement('div');
-          lbl.innerHTML = filter.label;
-          lbl.className += 'typo-body2';
-          lbl.style.cursor = 'pointer';
-          var clps = document.createElement('iron-collapse');
-          clps.id = 'filter' + i;
-          clps.setAttribute('opened', 'true');
-          this._assignCollapseHandler(lbl, i);
-          filterRow.appendChild(lbl);
-          if (filter.type === 'input') {
-            clps.appendChild(this._createInputControl(filter));
-          } else if (filter.type === 'dropdown') {
-            clps.appendChild(this._createDropdownControl(filter));
-          } else {
-            for (var j = 0; j < filter.values.length; j++) {
-              if (filter.type === 'checkboxlist') {
-                clps.appendChild(this._createCheckboxListControl(filter.key, filter.values[j], filter.options));
-              } else {
-                console.warn('Unknown filter control type: ' + filter.type);
-              }
-            }
+
+          var label = document.createElement('div');
+          label.innerHTML = filter.label;
+          label.className += 'typo-body2';
+          label.style.cursor = 'pointer';
+
+          var collapse = document.createElement('iron-collapse');
+          collapse.id = 'filter' + filterIndex;
+          collapse.setAttribute('opened', 'true');
+
+          label.addEventListener('click', function() {
+            collapse.toggle();
+          });
+
+          switch (filter.type) {
+            case 'input':
+              collapse.appendChild(this._createInputControl(filter));
+              break;
+
+            case 'dropdown':
+              collapse.appendChild(this._createDropdownControl(filter));
+              break;
+
+            case 'checkboxlist':
+              filter.values.forEach(function(value) {
+                collapse.appendChild(this._createCheckboxListControl(filter.key, value, filter.options));
+              }.bind(this));
+              break;
+
+            default:
+              console.warn('Unknown filter control type: ' + filter.type);
+              break;
           }
-          filterRow.appendChild(clps);
+
+          filterRow.appendChild(label);
+          filterRow.appendChild(collapse);
+
           filterContainer.appendChild(filterRow);
-          this._evaluateQueryString();
-        }
-      },
-      _assignCollapseHandler: function(ctl, idx) {
-        ctl.addEventListener('click', function(e) {
-          Polymer.dom(this.root).querySelector('iron-collapse#filter' + idx).toggle();
         }.bind(this));
       },
+
+      _populateControls: function() {
+        var controls = this.$['filter-container'].querySelectorAll('*[data-filter-key]');
+        controls = Array.prototype.slice.call(controls);
+        controls.forEach(function (control) {
+          var key = control.getAttribute('data-filter-key');
+          var value = control.getAttribute('data-filter-value') || undefined;
+          var term = this.findTerm(key, value);
+          if (term) {
+            if (value !== undefined) {
+              this._setControlSelected(control);
+            }
+            else {
+              this._setControlValue(control, term.value);
+            }
+          }
+          else {
+            this._clearControl(control);
+          }
+        }.bind(this));
+      },
+
+      _applyOptions: function(control, options) {
+        for (var option in options) {
+          control[option] = options[option];
+        }
+      },
+
       _createInputControl: function(filter) {
         var input = document.createElement('paper-input');
-        input.setAttribute('data-filter', filter.key);
+        input.setAttribute('data-filter-key', filter.key);
+        input.setAttribute('data-debounce-wait', filter.debounce || 350);
         this._applyOptions(input, filter.options || {});
-        if (filter.options && typeof filter.options.value !== 'undefined') {
-          input.value = filter.options.value;
-          var value = filter.options.value;
-          if (value && value !== null && value !== '') {
-            this.addFilter(filter.key + ':' + value);
-          }
-        }
         input.addEventListener('value-changed', this._inputChanged.bind(this));
         return input;
       },
+
       _createCheckboxListControl: function(key, value, opts) {
-        //todo deprecate this, should force the use of an object
-        if (typeof value !== 'object') {
-          value = {label:value,value:value};
-        }
-        var cl = document.createElement('div');
-        cl.className += 'checkbox-row horizontal center layout';
-        var cb = document.createElement('paper-checkbox');
-        cb.setAttribute('data-filter', key + ':' + value.value);
-        cb.setAttribute('for', '');
-        this._applyOptions(cb, opts || {});
-        cb.addEventListener('change', this._checkboxChanged.bind(this));
-        cl.appendChild(cb);
-        var val = document.createElement('div');
-        val.className += 'typo-body1';
-        val.innerHTML = value.label;
-        cl.appendChild(val);
-        return cl;
+        var checklist = document.createElement('div');
+        checklist.className += 'checkbox-row horizontal center layout';
+
+        var checkbox = document.createElement('paper-checkbox');
+        checkbox.setAttribute('data-filter-key', key);
+        checkbox.setAttribute('data-filter-value',  value.value);
+        checkbox.setAttribute('for', '');
+        this._applyOptions(checkbox, opts || {});
+        checkbox.addEventListener('change', this._checkboxChanged.bind(this));
+
+        var label = document.createElement('div');
+        label.className += 'typo-body1';
+        label.innerHTML = value.label;
+
+        checklist.appendChild(checkbox);
+        checklist.appendChild(label);
+
+        return checklist;
       },
+
       _createDropdownControl: function(filter) {
-        var dd = document.createElement('radium-combo');
-        dd.setAttribute('data-filter', filter.key);
-        dd.setAttribute('include-empty', false);
-        dd.options = filter.values;
-        this._applyOptions(dd, filter.options || {});
-        dd.addEventListener('option-change', this._dropdownChanged.bind(this));
-        return dd;
+        var dropdown = document.createElement('radium-combo');
+        dropdown.setAttribute('data-filter-key', filter.key);
+        dropdown.setAttribute('include-empty', false);
+        dropdown.options = filter.values;
+        this._applyOptions(dropdown, filter.options || {});
+        dropdown.addEventListener('option-change', this._dropdownChanged.bind(this));
+        return dropdown;
       },
-      _applyOptions: function(ctrl, opts) {
-        for (var opt in opts) {
-          ctrl[opt] = opts[opt];
-        }
-      },
+
       _setControlSelected: function(control) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-checkbox':
@@ -211,6 +208,7 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
         }
       },
+
       _setControlValue: function(control, value) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
@@ -224,6 +222,7 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
         }
       },
+
       _clearControl: function(control) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
@@ -240,34 +239,50 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
         }
       },
-      _evaluateQueryString: function() {
-        var newPath = window.location.pathname + window.location.hash.split('?')[0];
-        if (this._previousPath === '' || this._previousPath === newPath) {
-          var qsFilters = this.getCurrentFilters();
-          var controls = this.$['filter-container'].querySelectorAll('*[data-filter]');
-          for (var i = 0; i < controls.length; i++) {
-            var control = controls[i];
-            var found = false;
-            qsFilters.forEach(function (filter) {
-              var parts = filter.split(':');
-              if (control.getAttribute('data-filter') === filter) {
-                found = true;
-                this._setControlSelected(control);
-              } else if (control.getAttribute('data-filter') === parts[0]) {
-                found = true;
-                this._setControlValue(control, parts[1]);
-              }
-            }.bind(this));
-            if (found === false) {
-              this._clearControl(control);
-            }
+
+      _inputChanged: function(e) {
+        var wait = parseInt(e.currentTarget.getAttribute('data-debounce-wait'));
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.debounce('input', function() {
+          if (value && value !== null && value !== '') {
+            this.replaceTerm(key, value);
           }
-        }
-        this._previousPath = newPath;
+          else {
+            this.removeTerm(key);
+          }
+        }, wait);
       },
-      ready: function() {
-        window.addEventListener('hashchange', this._evaluateQueryString.bind(this));
-        this.async(function(){this._evaluateQueryString();}.bind(this), 500);
+
+      _checkboxChanged: function(e) {
+        var checked = e.currentTarget.getAttribute('checked') !== null;
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.currentTarget.getAttribute('data-filter-value');
+        if (checked === true) {
+          this.addTerm(key, value);
+        } else {
+          this.removeTerm(key, value);
+        }
+      },
+
+      _dropdownChanged: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        if (value && value !== null && value !== '') {
+          this.replaceTerm(key, value);
+        }
+        else {
+          this.removeTerm(key);
+        }
+      },
+
+      _filtersChanged: function() {
+        this._createControls();
+        this._populateControls();
+      },
+
+      _termsChanged: function() {
+        this._populateControls();
       }
     });
   })();

@@ -9,6 +9,7 @@
   <link rel="import" href="../../iron-flex-layout/classes/iron-flex-layout.html">
   <link rel="import" href="../radium-filter-bar.html">
   <link rel="import" href="../radium-filter-panel.html">
+  <link rel="import" href="../radium-filter-querystring.html">
   <style>body { font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif; }</style>
   <style is="custom-style">
     #panelWrapper {
@@ -22,12 +23,13 @@
 </head>
 <body unresolved>
   <template is="dom-bind" id="app">
+    <radium-filter-querystring filters="[[_filters]]" terms="{{_terms}}"></radium-filter-querystring>
     <div class="fit horizontal layout">
       <div id="panelWrapper">
-        <radium-filter-panel id="filterpanel" filters="{{_filters}}"></radium-filter-panel>
+        <radium-filter-panel id="filterpanel" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-panel>
       </div>
       <div class="flex">
-        <radium-filter-bar id="filterbar" filters="{{_filters}}" on-filter-change="_handleFilterChange"></radium-filter-bar>
+        <radium-filter-bar id="filterbar" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-bar>
         <div>
           <div id="filter-results">
             <h2>radium-filters demo</h2>
@@ -50,74 +52,93 @@
     </div>
   </template>
   <script>
-    window.location.hash = 'foo'; //right now, we only support hash routing query strings
+    // only overwrite to default hash if the has is unpopulated
+    if (window.location.hash.length === 0) {
+      window.location.hash = 'foo'; //right now, we only support hash routing query strings
+    }
+
+    app._terms = [];
+
     app._selectedStates = [];
     app._selectedRep = '';
     app._selectedQtr = '';
     app._adhoc = '';
-    app._handleFilterChange = function(e) {
+
+    app.observers = [
+      '_termsChanged(_terms)'
+    ];
+
+    app._getTermLabel = function(term) {
+      return this.$.filterbar.getLabelForTerm(term);
+    };
+
+    app._termsChanged = function () {
       app._selectedStates = [];
       app._selectedRep = '';
       app._selectedQtr = '';
       app._adhoc = '';
-      for (var i=0;i<e.detail.length;i++) {
-        var filter = e.detail[i];
-        switch (filter.key) {
+
+      app._terms.forEach(function(term) {
+        var label = app._getTermLabel(term);
+        switch (term.key) {
           case 'state':
-            app.push('_selectedStates', filter.label);
+            app.push('_selectedStates', label);
             break;
           case 'rep':
-            app._selectedRep = filter.label;
+            app._selectedRep = label;
             break;
           case 'qtr':
-            app._selectedQtr = filter.label;
+            app._selectedQtr = label;
             break;
           case 'adhoc':
-            app._adhoc = filter.value;
+            app._adhoc = term.value;
             break;
         }
-      }
+      });
     };
-    app._filters = [{
-                    type: 'checkboxlist',
-                    label: 'State(s)',
-                    key: 'state',
-                    values: [
-                              {label:'California', value:'California'},
-                              {label:'Florida', value:'Florida'},
-                              {label:'Nevada', value:'Nevada'},
-                              {label:'New York', value:'New York'},
-                              {label:'Texas', value:'Texas'}
-                            ]
-                   },
-                   {
-                    type: 'dropdown',
-                    label: 'Sales Rep',
-                    key: 'rep',
-                    values: [
-                              {label:'John', value:'John'},
-                              {label:'Bill', value:'Bill'},
-                              {label:'Sharon', value:'Sharon'},
-                              {label:'Mary', value:'Mary'},
-                              {label:'George', value:'George'}
-                            ],
-                   },
-                   {
-                    type: 'dropdown',
-                    label: 'Quarter',
-                    key: 'qtr',
-                    values: [
-                              {label:'1st Quarter', value:1},
-                              {label:'2nd Quarter', value:2},
-                              {label:'3rd Quarter', value:3},
-                              {label:'4th Quarter', value:4}
-                            ]
-                   },
-                   {
-                    type: 'input',
-                    label: 'Ad-hoc Filter',
-                    key: 'adhoc'
-                   }];
+
+    app._filters = [
+      {
+        type: 'checkboxlist',
+        label: 'State(s)',
+        key: 'state',
+        values: [
+          {label:'California', value:'California'},
+          {label:'Florida', value:'Florida'},
+          {label:'Nevada', value:'Nevada'},
+          {label:'New York', value:'New York'},
+          {label:'Texas', value:'Texas'}
+        ]
+      },
+      {
+        type: 'dropdown',
+        label: 'Sales Rep',
+        key: 'rep',
+        values: [
+          {label:'John', value:'John'},
+          {label:'Bill', value:'Bill'},
+          {label:'Sharon', value:'Sharon'},
+          {label:'Mary', value:'Mary'},
+          {label:'George', value:'George'}
+        ]
+      },
+      {
+        type: 'dropdown',
+        label: 'Quarter',
+        key: 'qtr',
+        values: [
+          {label:'1st Quarter', value:1},
+          {label:'2nd Quarter', value:2},
+          {label:'3rd Quarter', value:3},
+          {label:'4th Quarter', value:4}
+        ]
+      },
+      {
+        type: 'input',
+        label: 'Ad-hoc Filter',
+        key: 'adhoc'
+      }
+    ];
   </script>
 </body>
 </html>
