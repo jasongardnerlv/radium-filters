@@ -56,14 +56,14 @@ Header bar Polymer element for doing filters / faceted search.
     <div class="filterbar horizontal layout">
       <div class="filterbar-title typo-body2">Filtered By:</div>
       <div class="flex">
-        <template is="dom-repeat" items="[[_terms]]">
+        <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
           <paper-button on-click="_termClicked" data-term$="[[item]]">
             <span class="typo-body1">[[item.label]]</span>
             <iron-icon icon="close"></iron-icon>
           </paper-button>
         </template>
       </div>
-      <a on-click="_clear">
+      <a on-click="_clearAllClicked">
         <span class="typo-body1">Clear All</span>
       </a>
     </div>
@@ -73,45 +73,27 @@ Header bar Polymer element for doing filters / faceted search.
   (function() {
     Polymer({
       is: 'radium-filter-bar',
-      properties: {
-        filters: {
-          type: Array,
-          value: function() { return []; },
-          observer: '_filtersChanged'
-        },
-        _terms: {
-          type: Array,
-          value: function() { return []; }
-        },
-        _previousPath: {
-          type: String,
-          value: ''
-        }
-      },
+
       behaviors: [RadiumFilterBehavior],
-      _filtersChanged: function() {
-        this.async(function(){this._evaluateQueryString();}.bind(this));
+
+      _getChipsForFiltersAndTerms: function() {
+        return this.terms.map(function(term){
+          return {
+            label: this.getLabelForTerm(term),
+            key: term.key,
+            value: term.value
+          }
+        }.bind(this));
       },
-      _evaluateQueryString: function() {
-        var newPath = window.location.pathname + window.location.hash.split('?')[0];
-        if (this._previousPath === '' || newPath === this._previousPath) {
-          this.setFilterTerms();
-        }
-        this._previousPath = newPath;
+
+      _clearAllClicked: function() {
+        this.removeAllTerms();
       },
+
       _termClicked: function(evt) {
-        var fltr = JSON.parse(evt.currentTarget.getAttribute('data-term'));
-        var filterTerm = fltr.key + ':' + encodeURIComponent(fltr.value);
-        this.removeFilter(filterTerm);
-      },
-      _clear: function() {
-        this.removeAllFilters();
-      },
-      ready: function() {
-        window.addEventListener('hashchange', this._evaluateQueryString.bind(this));
-        this._evaluateQueryString();
-      },
+        var term = JSON.parse(evt.currentTarget.getAttribute('data-term'));
+        this.removeTerm(term.key, term.value);
+      }
     });
   })();
 </script>
-
