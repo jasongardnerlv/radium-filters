@@ -64,7 +64,7 @@ Header bar Polymer element for doing filters / faceted search.
   </style>
   <template>
     <div class="filterbar horizontal layout">
-      <div hidden$="[[!showFilterIcon]]">
+      <div hidden$="[[hideFilterIcon]]">
         <iron-icon icon="filter-list"></iron-icon>
       </div>
       <div class="flex">
@@ -89,9 +89,9 @@ Header bar Polymer element for doing filters / faceted search.
       behaviors: [RadiumFilterBehavior],
 
       properties: {
-        showFilterIcon: {
+        hideFilterIcon: {
           type: Boolean,
-          value: true
+          value: false
         }
       },
 
