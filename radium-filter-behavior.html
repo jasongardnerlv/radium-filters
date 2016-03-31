@@ -134,6 +134,26 @@
     },
 
     /**
+     * Finds the term corresponding to the specified filter key and value (if present).
+     *
+     * @param {string} key
+     * @param {number|string} value
+     * @returns {Array<FilterTerm>|undefined}
+     */
+    findTerms: function(key, value) {
+      if (value !== undefined) {
+        return (this.terms || []).filter(function(term) {
+          return (term.key === key && term.value === value);
+        });
+      }
+      else {
+        return (this.terms || []).filter(function(term) {
+          return (term.key === key);
+        });
+      }
+    },
+
+    /**
      * Replaces (or adds) a term for the specified filter key and value.
      *
      * @param {string} key

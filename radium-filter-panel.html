@@ -4,6 +4,7 @@
 <link rel="import" href="../paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../radium-combo/radium-combo.html">
 <link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="radium-filter-dropdown-list.html">
 <link rel="import" href="radium-filter-behavior.html">
 <!--
 Side Panel Polymer element for doing filters / faceted search.
@@ -119,6 +120,10 @@ Side Panel Polymer element for doing filters / faceted search.
               }.bind(this));
               break;
 
+            case 'dropdownlist':
+              collapse.appendChild(this._createDropdownListControl(filter));
+              break;
+
             default:
               console.warn('Unknown filter control type: ' + filter.type);
               break;
@@ -137,13 +142,16 @@ Side Panel Polymer element for doing filters / faceted search.
         controls.forEach(function (control) {
           var key = control.getAttribute('data-filter-key');
           var value = control.getAttribute('data-filter-value') || undefined;
-          var term = this.findTerm(key, value);
-          if (term) {
+          var terms = this.findTerms(key, value);
+          if (terms.length > 0) {
             if (value !== undefined) {
               this._setControlSelected(control);
             }
             else {
-              this._setControlValue(control, term.value);
+              var values = terms.map(function(term) {
+                return term.value;
+              });
+              this._setControlValues(control, values);
             }
           }
           else {
@@ -198,6 +206,16 @@ Side Panel Polymer element for doing filters / faceted search.
         return dropdown;
       },
 
+      _createDropdownListControl: function(filter) {
+        var dropdownList = document.createElement('radium-filter-dropdown-list');
+        dropdownList.setAttribute('data-filter-key', filter.key);
+        dropdownList.options = filter.values;
+        this._applyOptions(dropdownList, filter.options || {});
+        dropdownList.addEventListener('value-added', this._dropdownListValueAdded.bind(this));
+        dropdownList.addEventListener('value-removed', this._dropdownListValueRemoved.bind(this));
+        return dropdownList;
+      },
+
       _setControlSelected: function(control) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-checkbox':
@@ -209,13 +227,16 @@ Side Panel Polymer element for doing filters / faceted search.
         }
       },
 
-      _setControlValue: function(control, value) {
+      _setControlValues: function(control, values) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
-            control.value = value;
+            control.value = values[0] || '';
             break;
           case 'radium-combo':
-            control.setValue(value);
+            control.setValue(values[0] || '');
+            break;
+          case 'radium-filter-dropdown-list':
+            control.value = values;
             break;
           default:
             console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
@@ -233,6 +254,9 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
           case 'radium-combo':
             control.clearSelection();
+            break;
+          case 'radium-filter-dropdown-list':
+            control.value = [];
             break;
           default:
             console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
@@ -274,6 +298,18 @@ Side Panel Polymer element for doing filters / faceted search.
         else {
           this.removeTerm(key);
         }
+      },
+
+      _dropdownListValueAdded: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.addTerm(key, value);
+      },
+
+      _dropdownListValueRemoved: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.removeTerm(key, value);
       },
 
       _filtersChanged: function() {
