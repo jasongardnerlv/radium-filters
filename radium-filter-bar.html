@@ -13,59 +13,71 @@ Header bar Polymer element for doing filters / faceted search.
 <dom-module id="radium-filter-bar">
   <style is="custom-style">
     .filterbar {
-      background-color: #DDDDDD;
+      background-color: #F5F5F5;
       color: rgba(0, 0, 0, 0.87);
       line-height: 40px;
-      padding: 0px 24px;
+      padding: 4px 16px;
     }
-    .filterbar-title {
-      margin: 0px 16px 0px 0px;
+    .filterbar div {
+      margin-right: 8px;
     }
-    .filterbar paper-button {
-      margin: 0px 8px 0px 0px;
-      min-width: initial;
-      text-transform: none;
-      white-space: nowrap;
+    .filterbar div:last-child {
+      margin-right: 0;
     }
-    .filterbar a {
-      text-align:right;
+    #clearIcon {
       cursor: pointer;
     }
     .filterbar paper-button {
-      padding: 0px;
+      display: inline-block;
+      box-sizing: border-box;
+      padding: 0 6px 0 12px;
+      margin: 0px 4px 0px 0px;
+      min-width: initial;
+      height: 32px;
+      line-height: 32px;
+      text-transform: none;
+      white-space: nowrap;
+      cursor: pointer;
+      background-color: #E0E0E0;
+      border-radius: 16px;
     }
     .filterbar paper-button > ::content paper-material {
       padding: 0px;
     }
-    .filterbar iron-icon {
-      color: #ff0000;
-      width: 14px;
-      height: 14px;
-      margin: 2px 0px 0px 0px;
+    .filterbar paper-button .chip-label {
+      font-size: 14px;
+      font-weight: 400;
     }
-    .typo-body2 {
-      font-size: 14px !important;
-      font-weight: 500 !important;
+    .filterbar paper-button iron-icon {
+      color: #9E9E9E;
+      width: 20px;
+      height: 20px;
+      margin-top: -2px;
     }
-    .typo-body1 {
-      font-size: 14px !important;
-      font-weight: 400 !important;
+    .filterbar paper-button:hover {
+      color: #ffffff;
+      background-color: #616161;
+    }
+    .filterbar paper-button:hover iron-icon {
+      color: #ffffff;
     }
   </style>
   <template>
     <div class="filterbar horizontal layout">
-      <div class="filterbar-title typo-body2">Filtered By:</div>
+      <div hidden$="[[hideFilterIcon]]">
+        <iron-icon icon="filter-list"></iron-icon>
+      </div>
       <div class="flex">
         <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
-          <paper-button on-click="_termClicked" data-term$="[[item]]">
-            <span class="typo-body1">[[item.label]]</span>
-            <iron-icon icon="close"></iron-icon>
+          <paper-button data-term$="[[item]]" on-click="_termClicked">
+            <span class="chip-label">[[item.label]]</span>
+            <iron-icon icon="cancel"></iron-icon>
           </paper-button>
         </template>
       </div>
-      <a on-click="_clearAllClicked">
-        <span class="typo-body1">Clear All</span>
-      </a>
+      <div>
+        <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
+      </div>
     </div>
   </template>
 </dom-module>
@@ -75,6 +87,13 @@ Header bar Polymer element for doing filters / faceted search.
       is: 'radium-filter-bar',
 
       behaviors: [RadiumFilterBehavior],
+
+      properties: {
+        hideFilterIcon: {
+          type: Boolean,
+          value: false
+        }
+      },
 
       _getChipsForFiltersAndTerms: function() {
         return this.terms.map(function(term){

@@ -111,6 +111,21 @@
         ]
       },
       {
+        type: 'dropdownlist',
+        label: 'State',
+        key: 'state',
+        options: {
+          type: 'typeahead' // normally defaults to 'dropdown', other valid options are 'combobox'
+        },
+        values: [
+          {label:'California', value:'California'},
+          {label:'Florida', value:'Florida'},
+          {label:'Nevada', value:'Nevada'},
+          {label:'New York', value:'New York'},
+          {label:'Texas', value:'Texas'}
+        ]
+      },
+      {
         type: 'dropdown',
         label: 'Sales Rep',
         key: 'rep',
