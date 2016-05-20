@@ -14,15 +14,21 @@ Header bar Polymer element for doing filters / faceted search.
   <style is="custom-style">
     .filterbar {
       background-color: #F5F5F5;
+      border-radius: 16px;
       color: rgba(0, 0, 0, 0.87);
       line-height: 40px;
-      padding: 4px 16px;
+      padding: 4px 8px;
     }
-    .filterbar div {
+    .filterbar > div {
       margin-right: 8px;
     }
-    .filterbar div:last-child {
+    .filterbar > div:last-child {
       margin-right: 0;
+    }
+    .filterbar .chip-container {
+      overflow: hidden;
+      max-height: 100px;
+      overflow-y: auto;
     }
     #clearIcon {
       cursor: pointer;
@@ -31,7 +37,7 @@ Header bar Polymer element for doing filters / faceted search.
       display: inline-block;
       box-sizing: border-box;
       padding: 0 6px 0 12px;
-      margin: 0px 4px 0px 0px;
+      margin: 4px;
       min-width: initial;
       height: 32px;
       line-height: 32px;
@@ -40,19 +46,29 @@ Header bar Polymer element for doing filters / faceted search.
       cursor: pointer;
       background-color: #E0E0E0;
       border-radius: 16px;
+      overflow: hidden;
     }
     .filterbar paper-button > ::content paper-material {
       padding: 0px;
     }
+    .filterbar paper-button .chip-label-container {
+      display: inline-flex;
+      max-width: calc(100% - 20px);
+      margin: 0;
+    }
     .filterbar paper-button .chip-label {
       font-size: 14px;
       font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .filterbar paper-button iron-icon {
       color: #9E9E9E;
       width: 20px;
       height: 20px;
       margin-top: -2px;
+      line-height: 14px;
     }
     .filterbar paper-button:hover {
       color: #ffffff;
@@ -61,19 +77,31 @@ Header bar Polymer element for doing filters / faceted search.
     .filterbar paper-button:hover iron-icon {
       color: #ffffff;
     }
+
+    @media (min-width: 600px) {
+      .filterbar .chip-container {
+        overflow: hidden;
+        max-height: 140px;
+        overflow-y: auto;
+      }
+    }
   </style>
   <template>
     <div class="filterbar horizontal layout">
       <div hidden$="[[hideFilterIcon]]">
         <iron-icon icon="filter-list"></iron-icon>
       </div>
-      <div class="flex">
-        <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
-          <paper-button data-term$="[[item]]" on-click="_termClicked">
-            <span class="chip-label">[[item.label]]</span>
-            <iron-icon icon="cancel"></iron-icon>
-          </paper-button>
-        </template>
+      <div class="chip-container flex">
+        <div class="horizontal layout wrap">
+          <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
+            <paper-button data-term$="[[item]]" on-click="_termClicked">
+              <div class="chip-label-container">
+                <span class="chip-label">[[item.label]]</span>
+              </div>
+              <iron-icon icon="cancel"></iron-icon>
+            </paper-button>
+          </template>
+        </div>
       </div>
       <div>
         <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
