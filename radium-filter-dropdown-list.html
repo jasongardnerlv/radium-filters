@@ -21,7 +21,7 @@ Dropdown list filter component.
     }
 
     .value-row .value-label {
-      display: inline-flex;
+      display: inline-block;
       width: calc(100% - 24px);
       font-size: 14px;
       font-weight: 400;
@@ -47,7 +47,7 @@ Dropdown list filter component.
       <div class="flex">
         <template is="dom-repeat" items="[[value]]">
           <div class="value-row">
-            <div class="value-label">[[_getOptionLabelForValue(options, item)]]</div>
+            <div class="value-label" title="[[_getOptionLabelForValue(options, item)]]">[[_getOptionLabelForValue(options, item)]]</div>
             <iron-icon icon="cancel" on-tap="_removeValueClick"></iron-icon>
           </div>
         </template>
