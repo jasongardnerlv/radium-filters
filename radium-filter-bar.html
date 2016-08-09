@@ -63,6 +63,9 @@ Header bar Polymer element for doing filters / faceted search.
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .filterbar paper-button .chip-label .filter-label {
+      font-weight: 500;
+    }
     .filterbar paper-button iron-icon {
       color: #9E9E9E;
       width: 20px;
@@ -96,7 +99,10 @@ Header bar Polymer element for doing filters / faceted search.
           <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
             <paper-button data-term$="[[item]]" on-click="_termClicked">
               <div class="chip-label-container">
-                <span class="chip-label">[[item.label]]</span>
+                <span class="chip-label">
+                  <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
+                  <span class="term-label">[[item.label]]</span>
+                </span>
               </div>
               <iron-icon icon="cancel"></iron-icon>
             </paper-button>
@@ -117,6 +123,10 @@ Header bar Polymer element for doing filters / faceted search.
       behaviors: [RadiumFilterBehavior],
 
       properties: {
+        hideFilterLabel: {
+          type: Boolean,
+          value: false
+        },
         hideFilterIcon: {
           type: Boolean,
           value: false
@@ -126,6 +136,7 @@ Header bar Polymer element for doing filters / faceted search.
       _getChipsForFiltersAndTerms: function() {
         return this.terms.map(function(term){
           return {
+            filterLabel: this.getFilterLabelForTerm(term),
             label: this.getLabelForTerm(term),
             key: term.key,
             value: term.value

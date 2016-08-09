@@ -87,6 +87,20 @@
     },
 
     /**
+     * Gets the filter label that corresponds to the specified term (if available), or returns an empty string.
+     *
+     * @param {FilterTerm} term
+     * @returns {number|string}
+     */
+    getFilterLabelForTerm: function(term) {
+      var filter = this.getFilterForTerm(term);
+      if (filter) {
+        return filter.label;
+      }
+      return '';
+    },
+
+    /**
      * Gets the label that corresponds to the specified term (if available), or returns the term value.
      *
      * @param {FilterTerm} term
