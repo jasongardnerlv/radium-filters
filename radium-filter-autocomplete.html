@@ -1,0 +1,321 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-dropdown/iron-dropdown.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input-container.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-spinner/paper-spinner.html">
+<!--
+Dropdown list filter autocomplete component..
+
+@element radium-filter-autocomplete
+@demo demo/index.html Basic demo
+-->
+<dom-module id="radium-filter-autocomplete">
+  <style is="custom-style">
+    :host([no-label-float]) #dropdown {
+      margin-top: 36px;
+    }
+
+    paper-input-container:focus {
+      outline: 0;
+    }
+
+    #input {
+      cursor: text;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 24px;
+    }
+
+    #input[disabled] {
+      opacity: 1.0;
+      -webkit-text-fill-color: #212121;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    label, #input {
+      padding-right: 24px;
+      box-sizing: border-box;
+    }
+
+    #clearIcon {
+      position: absolute;
+      right: 0;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      padding: 2px;
+    }
+
+    #dropdown {
+      margin-top: 56px;
+      background-color: #FFFFFF;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    }
+
+    #loadingItem, #noMatchesItem {
+      pointer-events: none;
+    }
+
+    #loadingItem > div {
+      width: 100%;
+      height: 64px;
+    }
+
+    paper-spinner {
+      --paper-spinner-layer-1-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-2-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
+    }
+  </style>
+  <template>
+    <paper-input-container
+      id="inputContainer" tabindex="0"
+      disabled$="[[disabled]]"
+      invalid="[[invalid]]" required="[[required]]"
+      always-float-label="[[alwaysFloatLabel]]" no-label-float="[[noLabelFloat]]">
+      <label>[[label]]</label>
+      <input
+        id="input" class="paper-input-input"
+        is="iron-input" type="text" autocomplete="off"
+        value="[[value]]"
+        on-input="_onInputInput" on-keydown="_onInputKeydown" on-blur="_onInputBlur">
+      <iron-icon
+        id="clearIcon"
+        icon="clear" hidden$="[[_isClearIconHidden(value)]]"
+        on-tap="_onClearIconTap"></iron-icon>
+      <paper-input-error>[[errorMessage]]</paper-input-error>
+    </paper-input-container>
+    <iron-dropdown id="dropdown" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
+      <div class="dropdown-content">
+        <template is="dom-if" if="[[_isLoading]]">
+          <paper-item id="loadingItem">
+            <div class="vertical center-center layout">
+              <paper-spinner active="[[_isLoading]]"></paper-spinner>
+            </div>
+          </paper-item>
+        </template>
+        <paper-listbox id="listbox" on-keydown="_onListboxKeydown">
+          <template is="dom-if" if="[[_hasMatches(_suggestions, _isLoading)]]">
+            <template is="dom-repeat" items="[[_suggestions]]">
+              <paper-item value="[[index]]" on-touchend="_onSuggestionItemTouchEnd" on-tap="_onSuggestionItemTap">
+                <span title$="[[item.label]]">[[item.label]]</span>
+              </paper-item>
+            </template>
+          </template>
+        </paper-listbox>
+      </div>
+    </iron-dropdown>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    Polymer({
+      is: 'radium-filter-autocomplete',
+
+      properties: {
+        /**
+         * Set to true to always float the label.
+         */
+        alwaysFloatLabel: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * Set to true to disable this input.
+         */
+        disabled: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        },
+        /**
+         * The error message to display when the input is invalid.
+         */
+        errorMessage: {
+          type: String,
+          value: ''
+        },
+        /**
+         * Returns true if the value is invalid.
+         */
+        invalid: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * The label for this input.
+         */
+        label: {
+          type: String,
+          value: null,
+          reflectToAttribute: true
+        },
+        /**
+         * The minimum input length before triggering a query.
+         */
+        minLength: {
+          type: Number,
+          value: 1
+        },
+        /**
+         * Set to true to disable the floating label.
+         */
+        noLabelFloat: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        },
+        /**
+         * The text entered by the user / displayed in the input.
+         */
+        value: {
+          type: String,
+          value: null
+        },
+        /**
+         * Set to true to mark the input as required.
+         */
+        required: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * The source function - called with search query and callback parameters, should return label + value Objects.
+         */
+        source: {
+          type: Function,
+          value: null
+        }
+      },
+
+      ready: function() {
+        this._isLoading = false;
+        this._suggestions = [];
+      },
+
+      executeQuery: function(query) {
+        if (query && query.length >= this.minLength && this.source) {
+          this.value = query;
+          this._isLoading = true;
+          this._suggestions = [];
+          this._openDropdown();
+
+          this.source(this.value, function(suggestions) {
+            this._setSuggestions(suggestions);
+          }.bind(this));
+        }
+      },
+
+      _setSuggestions: function(suggestions) {
+        this._suggestions = Array.isArray(suggestions) ? suggestions : [];
+        this._isLoading = false;
+
+        if (this._suggestions.length === 0) {
+          this.$.dropdown.close();
+        }
+        else {
+          this.$.listbox.select();
+        }
+      },
+
+      _openDropdown: function() {
+        this.$.listbox.selected = undefined;
+        this.$.dropdown.style.width = this.$.inputContainer.offsetWidth + 'px';
+        this.$.dropdown.positionTarget = this;
+        this.$.dropdown.open();
+      },
+
+      _isClearIconHidden: function(query) {
+        return ! (query && query.length > 0);
+      },
+
+      _hasMatches: function(suggestions, loading) {
+        return (!loading && suggestions.length > 0);
+      },
+
+      _clear: function() {
+        this.value = '';
+        this.cancelDebouncer('input');
+        this._isDirty = false;
+        this.fire('change');
+      },
+
+      _onClearIconTap: function() {
+        this.value = '';
+        this.cancelDebouncer('input');
+        this.fire('change');
+      },
+
+      _onDropdownIronOverlayClosed: function() {
+        if (this._isDirty && document.activeElement != this.$.input) {
+          this._clear();
+        }
+      },
+
+      _onInputBlur: function() {
+        if (this._isDirty && !this.$.dropdown.opened) {
+          this._clear();
+        }
+      },
+
+      _onInputInput: function() {
+        this.value = this.$.input.value;
+        this._isDirty = true;
+        this.fire('change');
+        this.debounce('input', function() {
+          this.executeQuery(this.value);
+        }, 400)
+      },
+
+      _onInputKeydown: function(e) {
+        if (this.$.dropdown.opened) {
+          switch (e.key) {
+            case 'ArrowDown':
+              this.async(function() {
+                this.$.listbox.focus();
+              });
+              break;
+            case 'Escape':
+              this.$.dropdown.cancel();
+              break;
+          }
+        }
+        else {
+          if (e.key === 'Enter' || e.key === 'ArrowDown') {
+            this.cancelDebouncer('input');
+            this.executeQuery(this.$.input.value);
+          }
+        }
+      },
+
+      _onListboxKeydown: function(e) {
+        if (e.key === 'Escape') {
+          this.$.dropdown.cancel();
+        }
+      },
+
+      _onSuggestionItemTap: function(e) {
+        var selectedSuggestion = this._suggestions[e.currentTarget.value];
+        this.value = selectedSuggestion.label;
+        this._isDirty = false;
+
+        this._suggestions = [];
+        this.$.dropdown.close();
+
+        this.fire('selected', selectedSuggestion);
+      },
+
+      _onSuggestionItemTouchEnd: function(e) {
+        // NOTE: This prevents synthesized "click" events that will bleed through and click items under the dropdown.
+        e.preventDefault();
+      }
+    });
+  })();
+</script>

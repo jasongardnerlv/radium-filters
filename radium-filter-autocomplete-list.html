@@ -1,0 +1,114 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="radium-filter-autocomplete.html">
+<!--
+Autocomplete list filter component.
+
+@element radium-filter-autocomplete-list
+@demo demo/index.html Basic demo
+-->
+<dom-module id="radium-filter-autocomplete-list">
+  <style is="custom-style">
+    .value-row {
+      margin: 4px 0;
+      line-height: 20px;
+    }
+
+    .value-row .value-label {
+      display: inline-block;
+      width: calc(100% - 24px);
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+
+    .value-row iron-icon {
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+  </style>
+  <template>
+    <div class="dropdown-list vertical layout">
+      <div class="flex">
+        <template is="dom-repeat" items="[[value]]">
+          <div class="value-row">
+            <div class="value-label" title="[[_getFilterValueLabelForValue(filterValues, item)]]">
+              [[_getFilterValueLabelForValue(filterValues, item)]]
+            </div>
+            <iron-icon icon="cancel" on-tap="_removeValueClick"></iron-icon>
+          </div>
+        </template>
+      </div>
+      <radium-filter-autocomplete id="autocomplete" no-label-float source="[[source]]" on-selected="_onAutocompleteSelected">
+      </radium-filter-autocomplete>
+    </div>
+  </template>
+</dom-module>
+<script>
+  (function () {
+    Polymer({
+      is: 'radium-filter-autocomplete-list',
+
+      properties: {
+        filterValues: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        source: {
+          type: Function,
+          value: null
+        },
+        value: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          observer: '_valueChanged'
+        }
+      },
+
+      ready: function () {
+        this.$.autocomplete.value = '';
+      },
+
+      _getFilterValueLabelForValue: function (filterValues, value) {
+        var filterValue = (filterValues || []).find(function (filterValue) {
+          return filterValue.value === value;
+        });
+        return (filterValue && filterValue.label) ? filterValue.label : value;
+      },
+
+      _valueChanged: function (e) {
+        this.$.autocomplete.value = '';
+      },
+
+      _onAutocompleteSelected: function (e) {
+        var suggestion = e.detail;
+
+        if (suggestion.label && suggestion.value) {
+          this.value = (this.value || []).concat(suggestion.value);
+          this.fire('value-added', {label: suggestion.label, value: suggestion.value});
+        }
+      },
+
+      _removeValueClick: function (e) {
+        var valueToRemove = e.model.__data__.item;
+
+        this.value = (this.value || []).filter(function (value) {
+          return value !== valueToRemove;
+        });
+        this.fire('value-removed', {value: valueToRemove});
+      }
+
+    });
+  })();
+</script>

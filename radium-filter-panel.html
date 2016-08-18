@@ -4,6 +4,8 @@
 <link rel="import" href="../paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../radium-combo/radium-combo.html">
 <link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="radium-filter-autocomplete.html">
+<link rel="import" href="radium-filter-autocomplete-list.html">
 <link rel="import" href="radium-filter-dropdown-list.html">
 <link rel="import" href="radium-filter-behavior.html">
 <!--
@@ -120,6 +122,14 @@ Side Panel Polymer element for doing filters / faceted search.
               }.bind(this));
               break;
 
+            case 'autocomplete':
+              collapse.appendChild(this._createAutocompleteControl(filter));
+              break;
+
+            case 'autocompletelist':
+              collapse.appendChild(this._createAutocompleteListControl(filter));
+              break;
+
             case 'dropdownlist':
               collapse.appendChild(this._createDropdownListControl(filter));
               break;
@@ -196,10 +206,32 @@ Side Panel Polymer element for doing filters / faceted search.
         return checklist;
       },
 
+      _createAutocompleteControl: function(filter) {
+        var autocomplete = document.createElement('radium-filter-autocomplete');
+        autocomplete.setAttribute('data-filter-key', filter.key);
+        autocomplete.setAttribute('no-label-float', true);
+        autocomplete.filterValues = filter.values || [];
+        this._applyOptions(autocomplete, filter.options || {});
+        autocomplete.addEventListener('change', this._autocompleteChange.bind(this));
+        autocomplete.addEventListener('selected', this._autocompleteSelected.bind(this));
+        return autocomplete;
+      },
+
+      _createAutocompleteListControl: function(filter) {
+        var autocompleteList = document.createElement('radium-filter-autocomplete-list');
+        autocompleteList.setAttribute('data-filter-key', filter.key);
+        autocompleteList.filterValues = filter.values || [];
+        this._applyOptions(autocompleteList, filter.options || {});
+        autocompleteList.addEventListener('value-added', this._autocompleteListValueAdded.bind(this));
+        autocompleteList.addEventListener('value-removed', this._autocompleteListValueRemoved.bind(this));
+        return autocompleteList;
+      },
+
       _createDropdownControl: function(filter) {
         var dropdown = document.createElement('radium-combo');
         dropdown.setAttribute('data-filter-key', filter.key);
         dropdown.setAttribute('include-empty', false);
+        dropdown.setAttribute('no-label-float', true);
         dropdown.options = filter.values;
         this._applyOptions(dropdown, filter.options || {});
         dropdown.addEventListener('option-change', this._dropdownChanged.bind(this));
@@ -230,7 +262,13 @@ Side Panel Polymer element for doing filters / faceted search.
       _setControlValues: function(control, values) {
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
-            control.value = values[0] || '';
+            control.value = (values[0] !== undefined && values[0] !== null) ? String(values[0]) : '';
+            break;
+          case 'radium-filter-autocomplete':
+            control.value = (values[0] !== undefined && values[0] !== null) ? String(values[0]) : '';
+            break;
+          case 'radium-filter-autocomplete-list':
+            control.value = values;
             break;
           case 'radium-combo':
             control.setValue(values[0] || '');
@@ -251,6 +289,12 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
           case 'paper-checkbox':
             control.removeAttribute('checked');
+            break;
+          case 'radium-filter-autocomplete':
+            control.value = '';
+            break;
+          case 'radium-filter-autocomplete-list':
+            control.value = [];
             break;
           case 'radium-combo':
             control.clearSelection();
@@ -287,6 +331,38 @@ Side Panel Polymer element for doing filters / faceted search.
         } else {
           this.removeTerm(key, value);
         }
+      },
+
+      _autocompleteChange: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var query = e.currentTarget.value;
+        if (this.findTerm(key)) {
+          this.removeTerm(key);
+        }
+        e.currentTarget.value = query;
+      },
+
+      _autocompleteSelected: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        if (value) {
+          this.replaceTerm(key, value);
+        }
+        else {
+          this.removeTerm(key);
+        }
+      },
+
+      _autocompleteListValueAdded: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.addTerm(key, value);
+      },
+
+      _autocompleteListValueRemoved: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.removeTerm(key, value);
       },
 
       _dropdownChanged: function(e) {

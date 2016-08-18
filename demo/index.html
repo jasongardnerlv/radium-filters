@@ -9,12 +9,14 @@
   <link rel="import" href="../../iron-flex-layout/classes/iron-flex-layout.html">
   <link rel="import" href="../radium-filter-bar.html">
   <link rel="import" href="../radium-filter-panel.html">
+  <link rel="import" href="../radium-filter-autocomplete.html">
   <link rel="import" href="../radium-filter-querystring.html">
   <style>body { font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif; }</style>
   <style is="custom-style">
     #panelWrapper {
       width: 240px;
       border: 1px solid #cccccc;
+      overflow: auto;
     }
     #filter-results {
       padding: 0px 24px 24px;
@@ -29,10 +31,18 @@
         <radium-filter-panel id="filterpanel" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-panel>
       </div>
       <div class="flex">
-        <radium-filter-bar id="filterbar" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-bar>
+        <radium-filter-bar id="filterbar" label="Test" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-bar>
         <div>
           <div id="filter-results">
             <h2>radium-filters demo</h2>
+            <div style="text-decoration:underline"><b>Selected Customer</b></div>
+            <div>{{_selectedCustomer}}</div>
+            <br/>
+            <div style="text-decoration:underline"><b>Selected Affiliates</b></div>
+            <template is="dom-repeat" items="{{_selectedAffiliates}}">
+              <div>{{item}}</div>
+            </template>
+            <br/>
             <div style="text-decoration:underline"><b>Selected States</b></div>
             <template is="dom-repeat" items="{{_selectedStates}}">
               <div>{{item}}</div>
@@ -57,8 +67,26 @@
       window.location.hash = 'foo'; //right now, we only support hash routing query strings
     }
 
+    var mockData = {}; // Populated further below.
+    function fetchCompanies(query, done) {
+      setTimeout(function() {
+        var filteredResults = mockData.names
+          .filter(function(result) {
+            return result.label.toLowerCase().indexOf(query.toLowerCase()) != -1;
+          })
+          .sort(function(a, b) {
+            if (a.label < b.label) return -1;
+            if (a.label > b.label) return 1;
+            return 0;
+          });
+        done(filteredResults);
+      }, 400);
+    }
+
     app._terms = [];
 
+    app._selectedCustomer = '';
+    app._selectedAffiliates = [];
     app._selectedStates = [];
     app._selectedRep = '';
     app._selectedQtr = '';
@@ -98,6 +126,22 @@
     };
 
     app._filters = [
+      {
+        type: 'autocomplete',
+        label: 'Customer',
+        key: 'department',
+        options: {
+          source: fetchCompanies
+        }
+      },
+      {
+        type: 'autocompletelist',
+        label: 'Affiliates',
+        key: 'affiliate',
+        options: {
+          source: fetchCompanies
+        }
+      },
       {
         type: 'checkboxlist',
         label: 'State(s)',
@@ -153,6 +197,210 @@
         label: 'Ad-hoc Filter',
         key: 'adhoc'
       }
+    ];
+
+    // Generated using: https://www.mockaroo.com/
+    mockData.names = [
+      {"value": 1, "label": "Brandon"},
+      {"value": 2, "label": "Juan"},
+      {"value": 3, "label": "Jennifer"},
+      {"value": 4, "label": "Beverly"},
+      {"value": 5, "label": "Marilyn"},
+      {"value": 6, "label": "Victor"},
+      {"value": 7, "label": "Nicholas"},
+      {"value": 8, "label": "Eric"},
+      {"value": 9, "label": "Billy"},
+      {"value": 10, "label": "Kelly"},
+      {"value": 11, "label": "Joseph"},
+      {"value": 12, "label": "Russell"},
+      {"value": 13, "label": "Dorothy"},
+      {"value": 14, "label": "Gregory"},
+      {"value": 15, "label": "Roy"},
+      {"value": 16, "label": "Elizabeth"},
+      {"value": 17, "label": "Nicholas"},
+      {"value": 18, "label": "Louise"},
+      {"value": 19, "label": "Donald"},
+      {"value": 20, "label": "Robert"},
+      {"value": 21, "label": "Elizabeth"},
+      {"value": 22, "label": "Donald"},
+      {"value": 23, "label": "Judy"},
+      {"value": 24, "label": "Cynthia"},
+      {"value": 25, "label": "Jane"},
+      {"value": 26, "label": "Diane"},
+      {"value": 27, "label": "Kimberly"},
+      {"value": 28, "label": "Juan"},
+      {"value": 29, "label": "Timothy"},
+      {"value": 30, "label": "David"},
+      {"value": 31, "label": "Joan"},
+      {"value": 32, "label": "Jimmy"},
+      {"value": 33, "label": "Amy"},
+      {"value": 34, "label": "Douglas"},
+      {"value": 35, "label": "Andrea"},
+      {"value": 36, "label": "Beverly"},
+      {"value": 37, "label": "Joe"},
+      {"value": 38, "label": "Teresa"},
+      {"value": 39, "label": "Mildred"},
+      {"value": 40, "label": "Frank"},
+      {"value": 41, "label": "Melissa"},
+      {"value": 42, "label": "Virginia"},
+      {"value": 43, "label": "Mary"},
+      {"value": 44, "label": "Lillian"},
+      {"value": 45, "label": "Paula"},
+      {"value": 46, "label": "Virginia"},
+      {"value": 47, "label": "Katherine"},
+      {"value": 48, "label": "Jennifer"},
+      {"value": 49, "label": "Judy"},
+      {"value": 50, "label": "Randy"},
+      {"value": 51, "label": "Joe"},
+      {"value": 52, "label": "Bobby"},
+      {"value": 53, "label": "Louis"},
+      {"value": 54, "label": "Kimberly"},
+      {"value": 55, "label": "Kathryn"},
+      {"value": 56, "label": "Joshua"},
+      {"value": 57, "label": "Carlos"},
+      {"value": 58, "label": "Shawn"},
+      {"value": 59, "label": "Joyce"},
+      {"value": 60, "label": "Julia"},
+      {"value": 61, "label": "Matthew"},
+      {"value": 62, "label": "Lori"},
+      {"value": 63, "label": "Helen"},
+      {"value": 64, "label": "Patricia"},
+      {"value": 65, "label": "Lori"},
+      {"value": 66, "label": "Aaron"},
+      {"value": 67, "label": "Jennifer"},
+      {"value": 68, "label": "Tammy"},
+      {"value": 69, "label": "Amy"},
+      {"value": 70, "label": "Gary"},
+      {"value": 71, "label": "Kathy"},
+      {"value": 72, "label": "Carolyn"},
+      {"value": 73, "label": "Christina"},
+      {"value": 74, "label": "Jesse"},
+      {"value": 75, "label": "Gerald"},
+      {"value": 76, "label": "Stephen"},
+      {"value": 77, "label": "Russell"},
+      {"value": 78, "label": "Kathryn"},
+      {"value": 79, "label": "Joyce"},
+      {"value": 80, "label": "Russell"},
+      {"value": 81, "label": "Jerry"},
+      {"value": 82, "label": "Timothy"},
+      {"value": 83, "label": "Ruth"},
+      {"value": 84, "label": "Justin"},
+      {"value": 85, "label": "Gloria"},
+      {"value": 86, "label": "Willie"},
+      {"value": 87, "label": "John"},
+      {"value": 88, "label": "Lori"},
+      {"value": 89, "label": "Lisa"},
+      {"value": 90, "label": "Frank"},
+      {"value": 91, "label": "Anne"},
+      {"value": 92, "label": "Virginia"},
+      {"value": 93, "label": "Lori"},
+      {"value": 94, "label": "Adam"},
+      {"value": 95, "label": "Alan"},
+      {"value": 96, "label": "Amanda"},
+      {"value": 97, "label": "Raymond"},
+      {"value": 98, "label": "Ann"},
+      {"value": 99, "label": "Jimmy"},
+      {"value": 100, "label": "Bruce"},
+      {"value": 101, "label": "Adam"},
+      {"value": 102, "label": "Sean"},
+      {"value": 103, "label": "Scott"},
+      {"value": 104, "label": "Lori"},
+      {"value": 105, "label": "Robin"},
+      {"value": 106, "label": "Joan"},
+      {"value": 107, "label": "Nicole"},
+      {"value": 108, "label": "Walter"},
+      {"value": 109, "label": "Laura"},
+      {"value": 110, "label": "Joshua"},
+      {"value": 111, "label": "Peter"},
+      {"value": 112, "label": "Steve"},
+      {"value": 113, "label": "Carl"},
+      {"value": 114, "label": "Robert"},
+      {"value": 115, "label": "Jonathan"},
+      {"value": 116, "label": "Maria"},
+      {"value": 117, "label": "Helen"},
+      {"value": 118, "label": "Wanda"},
+      {"value": 119, "label": "Maria"},
+      {"value": 120, "label": "Maria"},
+      {"value": 121, "label": "Christine"},
+      {"value": 122, "label": "Carolyn"},
+      {"value": 123, "label": "Jerry"},
+      {"value": 124, "label": "Tammy"},
+      {"value": 125, "label": "Donna"},
+      {"value": 126, "label": "Billy"},
+      {"value": 127, "label": "Martin"},
+      {"value": 128, "label": "Earl"},
+      {"value": 129, "label": "Antonio"},
+      {"value": 130, "label": "Lisa"},
+      {"value": 131, "label": "Judy"},
+      {"value": 132, "label": "Nicole"},
+      {"value": 133, "label": "Joe"},
+      {"value": 134, "label": "Jean"},
+      {"value": 135, "label": "Sean"},
+      {"value": 136, "label": "Andrew"},
+      {"value": 137, "label": "Mark"},
+      {"value": 138, "label": "Kevin"},
+      {"value": 139, "label": "Gloria"},
+      {"value": 140, "label": "Janice"},
+      {"value": 141, "label": "Terry"},
+      {"value": 142, "label": "Ann"},
+      {"value": 143, "label": "Kimberly"},
+      {"value": 144, "label": "Ruby"},
+      {"value": 145, "label": "Jessica"},
+      {"value": 146, "label": "Jonathan"},
+      {"value": 147, "label": "Laura"},
+      {"value": 148, "label": "Melissa"},
+      {"value": 149, "label": "Stephanie"},
+      {"value": 150, "label": "Andrea"},
+      {"value": 151, "label": "Karen"},
+      {"value": 152, "label": "Carol"},
+      {"value": 153, "label": "Robin"},
+      {"value": 154, "label": "Bruce"},
+      {"value": 155, "label": "Patrick"},
+      {"value": 156, "label": "Adam"},
+      {"value": 157, "label": "Johnny"},
+      {"value": 158, "label": "Andrea"},
+      {"value": 159, "label": "Amanda"},
+      {"value": 160, "label": "Pamela"},
+      {"value": 161, "label": "Jean"},
+      {"value": 162, "label": "Edward"},
+      {"value": 163, "label": "Mildred"},
+      {"value": 164, "label": "Louise"},
+      {"value": 165, "label": "Eugene"},
+      {"value": 166, "label": "Elizabeth"},
+      {"value": 167, "label": "Fred"},
+      {"value": 168, "label": "Carol"},
+      {"value": 169, "label": "Jesse"},
+      {"value": 170, "label": "Marilyn"},
+      {"value": 171, "label": "Arthur"},
+      {"value": 172, "label": "Lisa"},
+      {"value": 173, "label": "Tina"},
+      {"value": 174, "label": "Andrea"},
+      {"value": 175, "label": "Raymond"},
+      {"value": 176, "label": "Nicole"},
+      {"value": 177, "label": "Maria"},
+      {"value": 178, "label": "Phyllis"},
+      {"value": 179, "label": "Virginia"},
+      {"value": 180, "label": "Tammy"},
+      {"value": 181, "label": "Judith"},
+      {"value": 182, "label": "Jeremy"},
+      {"value": 183, "label": "Marie"},
+      {"value": 184, "label": "Mary"},
+      {"value": 185, "label": "Stephanie"},
+      {"value": 186, "label": "Lillian"},
+      {"value": 187, "label": "Angela"},
+      {"value": 188, "label": "Nicholas"},
+      {"value": 189, "label": "Ralph"},
+      {"value": 190, "label": "Phillip"},
+      {"value": 191, "label": "Eric"},
+      {"value": 192, "label": "Tammy"},
+      {"value": 193, "label": "Ann"},
+      {"value": 194, "label": "Wayne"},
+      {"value": 195, "label": "Joe"},
+      {"value": 196, "label": "Daniel"},
+      {"value": 197, "label": "Henry"},
+      {"value": 198, "label": "Carl"},
+      {"value": 199, "label": "Kathleen"},
+      {"value": 200, "label": "Anne"}
     ];
   </script>
 </body>
