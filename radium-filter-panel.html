@@ -260,14 +260,16 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _setControlValues: function(control, values) {
+        var key = control.getAttribute('data-filter-key');
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
             control.value = (values[0] !== undefined && values[0] !== null) ? String(values[0]) : '';
             break;
           case 'radium-filter-autocomplete':
-            control.value = (values[0] !== undefined && values[0] !== null) ? String(values[0]) : '';
+            control.value = this.getLabelForTerm({key: key, value: values[0]});
             break;
           case 'radium-filter-autocomplete-list':
+            control.filterValues = this.getFilterValues(key);
             control.value = values;
             break;
           case 'radium-combo':
@@ -343,25 +345,34 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _autocompleteSelected: function(e) {
-        var key = e.currentTarget.getAttribute('data-filter-key');
+        var autocomplete = e.currentTarget;
+        var key = autocomplete.getAttribute('data-filter-key');
+        var label = e.detail.label;
         var value = e.detail.value;
         if (value) {
+          this.setFilterValues(key, [{ label: label, value: value }]);
           this.replaceTerm(key, value);
         }
         else {
+          this.setFilterValues(key, []);
           this.removeTerm(key);
         }
       },
 
       _autocompleteListValueAdded: function(e) {
-        var key = e.currentTarget.getAttribute('data-filter-key');
+        var autocompleteList = e.currentTarget;
+        var key = autocompleteList.getAttribute('data-filter-key');
+        var label = e.detail.label;
         var value = e.detail.value;
+        this.addFilterValue(key, label, value);
         this.addTerm(key, value);
       },
 
       _autocompleteListValueRemoved: function(e) {
-        var key = e.currentTarget.getAttribute('data-filter-key');
+        var autocompleteList = e.currentTarget;
+        var key = autocompleteList.getAttribute('data-filter-key');
         var value = e.detail.value;
+        this.removeFilterValue(key, value);
         this.removeTerm(key, value);
       },
 

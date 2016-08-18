@@ -58,6 +58,77 @@
     },
 
     /**
+     * Adds a new filter value to the filter matching the specified key.
+     *
+     * @param {string} key
+     * @param {string} label
+     * @param {number|string} value
+     */
+    addFilterValue: function(key, label, value) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        filter.values = (filter.values || []).concat({
+          label: label,
+          value: value
+        });
+      }
+    },
+
+    /**
+     * Sets the filter values for the filter matching the specified key.
+     *
+     * @param {string} key
+     * @param {Array<FilterTerm>} filterValues
+     */
+    setFilterValues: function(key, filterValues) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        filter.values = filterValues;
+      }
+    },
+
+    /**
+     * Removes the filter value that corresponds to the specified filter key and/or value (if present).
+     *
+     * @param {string} key
+     * @param {number|string} value
+     */
+    removeFilterValue: function(key, value) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        if (value !== undefined) {
+          filter.values = (filter.values || []).filter(function(filter) {
+            return filter.value !== value;
+          });
+        }
+        else {
+          filter.values = [];
+        }
+      }
+    },
+
+    /**
+     * Finds the filter values for the specified filter key.
+     *
+     * @param {string} key
+     */
+    getFilterValues: function(key) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        return filter.values || [];
+      }
+      return [];
+    },
+
+    /**
      * Finds the filter that corresponds to the specified term (if available).
      *
      * @param {FilterTerm} term
