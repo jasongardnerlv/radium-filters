@@ -46,7 +46,7 @@ Autocomplete list filter component.
           </div>
         </template>
       </div>
-      <radium-filter-autocomplete id="autocomplete" no-label-float source="[[source]]" on-selected="_onAutocompleteSelected">
+      <radium-filter-autocomplete id="autocomplete" no-label-float on-selected="_onAutocompleteSelected">
       </radium-filter-autocomplete>
     </div>
   </template>
@@ -78,6 +78,29 @@ Autocomplete list filter component.
 
       ready: function () {
         this.$.autocomplete.value = '';
+        this.$.autocomplete.source = this._filteredSource.bind(this);
+      },
+
+      _getFilteredSuggestions: function(suggestions) {
+        suggestions = suggestions || [];
+        var selectedSuggestions = this.value;
+        if (selectedSuggestions && selectedSuggestions.length > 0) {
+          return suggestions.filter(function(suggestion) {
+            return selectedSuggestions.indexOf(suggestion.value) === -1;
+          });
+        }
+        return suggestions;
+      },
+
+      _filteredSource: function(query, done) {
+        if (this.source) {
+          this.source(query, function(suggestions) {
+            done(this._getFilteredSuggestions(suggestions));
+          }.bind(this));
+        }
+        else {
+          done([]);
+        }
       },
 
       _getFilterValueLabelForValue: function (filterValues, value) {
