@@ -58,18 +58,20 @@
     },
 
     /**
-     * Adds a new filter value to the filter matching the specified key.
+     * Replaces (or adds) a new filter value to the filter matching the specified key.
      *
      * @param {string} key
      * @param {string} label
      * @param {number|string} value
      */
-    addFilterValue: function(key, label, value) {
+    replaceFilterValue: function(key, label, value) {
       var filter = this.filters.find(function(filter) {
         return filter.key === key;
       });
       if (filter) {
-        filter.values = (filter.values || []).concat({
+        filter.values = (filter.values || []).filter(function(filterValue) {
+          return !(filterValue.value == value);
+        }).concat( {
           label: label,
           value: value
         });
@@ -117,6 +119,7 @@
      * Finds the filter values for the specified filter key.
      *
      * @param {string} key
+     * @returns {Array<FilterValue>}
      */
     getFilterValues: function(key) {
       var filter = this.filters.find(function(filter) {

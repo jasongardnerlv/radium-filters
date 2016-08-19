@@ -65,11 +65,30 @@ Side Panel Polymer element for doing filters / faceted search.
       font-size: 14px !important;
       font-weight: 400 !important;
     }
+
+    #loadingIndicatorContainer {
+      padding-top: 18px;
+      text-align: center;
+    }
+
+    paper-spinner {
+      --paper-spinner-layer-1-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-2-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
+    }
   </style>
   <template>
     <div class="filter-wrapper">
-      <div class="typo-subheader filter-row">Filters</div>
-      <div id="filter-container"></div>
+      <div class="typo-subheader filter-row">
+        Filters
+      </div>
+      <template is="dom-if" if="[[loading]]">
+        <div id="loadingIndicatorContainer">
+          <paper-spinner active="[[loading]]"></paper-spinner>
+        </div>
+      </template>
+      <div id="filter-container" hidden$="[[loading]]"></div>
     </div>
   </template>
 </dom-module>
@@ -79,6 +98,20 @@ Side Panel Polymer element for doing filters / faceted search.
       is: 'radium-filter-panel',
 
       behaviors: [RadiumFilterBehavior],
+
+      properties: {
+        /**
+         * Indicates whether filter values are being loaded.
+         *
+         * @type boolean
+         */
+        loading: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        }
+      },
 
       observers: [
         '_filtersChanged(filters)',
@@ -168,6 +201,86 @@ Side Panel Polymer element for doing filters / faceted search.
             this._clearControl(control);
           }
         }.bind(this));
+      },
+
+      _getMissingFilterValues: function(filter) {
+        var terms = this.findTerms(filter.key);
+        var filterValues = filter.values || [];
+        return terms.filter(function(term) {
+          var matchingFilterValue = filterValues.find(function(filterValue) {
+            return (filterValue.value == term.value);
+          });
+          return !matchingFilterValue;
+        }).map(function(term) {
+          return term.value;
+        });
+      },
+
+      _loadFilterValues: function() {
+        var requests = [];
+        if (this.filters && this.terms) {
+          this.filters.forEach(function(filter) {
+            switch (filter.type) {
+              case 'autocomplete':
+              case 'autocompletelist':
+                if (filter.options.source) {
+                  var missingFilterValuesValuesForTerms = this._getMissingFilterValues(filter);
+                  if (missingFilterValuesValuesForTerms.length > 0) {
+                    // Set the loading flag for this filter (cleared when the most recent request completes).
+                    this._setLoading(true);
+                    requests.push(
+                      new Promise(function(resolve) {
+                        // Fetch the missing filter values via the filter source.
+                        filter.options.source(missingFilterValuesValuesForTerms, function(suggestions) {
+                          // Evaluate the current terms, and gather the corresponding filter values.
+                          var terms = this.findTerms(filter.key);
+                          var filterValues = terms.map(function(term) {
+                            // Find the corresponding suggestion, if provided.
+                            var suggestion = suggestions.find(function(suggestion) {
+                              return (suggestion.value === term.value);
+                            });
+                            if (suggestion) {
+                              // Use the label/value returned as a suggestion as the new filter value.
+                              return {label: suggestion.label, value: suggestion.value};
+                            }
+                            else {
+                              // No corresponding suggestion was returned, check if we already have the filter value.
+                              var filterValue = this.getFilterValueForTerm(term);
+                              if (!filterValue) {
+                                // Create a new filter value, using the value as the label.
+                                return {label: term.value, value: term.value};
+                              }
+                              // Use the existing filter value.
+                              return filterValue;
+                            }
+                          }.bind(this));
+                          this.setFilterValues(filter.key, filterValues);
+                          resolve();
+                        }.bind(this));
+                      }.bind(this))
+                    );
+                  }
+                }
+                break;
+
+              default:
+                break;
+            }
+          }.bind(this));
+        }
+        if (requests.length > 0) {
+          var pendingRequests = Promise.all(requests);
+          this._mostRecentPendingRequests = pendingRequests;
+          pendingRequests.then(function() {
+            // Only if this is the most recent request.
+            if (pendingRequests == this._mostRecentPendingRequests) {
+              // Now we can safely clear the loading flag.
+              this._setLoading(false);
+              // Trigger the UI to re-render terms.
+              this.notifyPath('terms', this.terms.concat());
+            }
+          }.bind(this));
+        }
       },
 
       _applyOptions: function(control, options) {
@@ -364,7 +477,7 @@ Side Panel Polymer element for doing filters / faceted search.
         var key = autocompleteList.getAttribute('data-filter-key');
         var label = e.detail.label;
         var value = e.detail.value;
-        this.addFilterValue(key, label, value);
+        this.replaceFilterValue(key, label, value);
         this.addTerm(key, value);
       },
 
@@ -372,7 +485,6 @@ Side Panel Polymer element for doing filters / faceted search.
         var autocompleteList = e.currentTarget;
         var key = autocompleteList.getAttribute('data-filter-key');
         var value = e.detail.value;
-        this.removeFilterValue(key, value);
         this.removeTerm(key, value);
       },
 
@@ -400,11 +512,13 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _filtersChanged: function() {
+        this._loadFilterValues();
         this._createControls();
         this._populateControls();
       },
 
       _termsChanged: function() {
+        this._loadFilterValues();
         this._populateControls();
       }
     });

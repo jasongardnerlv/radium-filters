@@ -94,15 +94,15 @@ Dropdown list filter autocomplete component..
     </paper-input-container>
     <iron-dropdown id="dropdown" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
       <div class="dropdown-content">
-        <template is="dom-if" if="[[_isLoading]]">
+        <template is="dom-if" if="[[_loading]]">
           <paper-item id="loadingItem">
             <div class="vertical center-center layout">
-              <paper-spinner active="[[_isLoading]]"></paper-spinner>
+              <paper-spinner active="[[_loading]]"></paper-spinner>
             </div>
           </paper-item>
         </template>
         <paper-listbox id="listbox" on-keydown="_onListboxKeydown">
-          <template is="dom-if" if="[[_hasMatches(_suggestions, _isLoading)]]">
+          <template is="dom-if" if="[[_hasMatches(_suggestions, _loading)]]">
             <template is="dom-repeat" items="[[_suggestions]]">
               <paper-item value="[[index]]" on-touchend="_onSuggestionItemTouchEnd" on-tap="_onSuggestionItemTap">
                 <span title$="[[item.label]]">[[item.label]]</span>
@@ -196,14 +196,14 @@ Dropdown list filter autocomplete component..
       },
 
       ready: function() {
-        this._isLoading = false;
+        this._loading = false;
         this._suggestions = [];
       },
 
       executeQuery: function(query) {
         if (query && query.length >= this.minLength && this.source) {
           this.value = query;
-          this._isLoading = true;
+          this._loading = true;
           this._suggestions = [];
           this._openDropdown();
 
@@ -215,7 +215,7 @@ Dropdown list filter autocomplete component..
 
       _setSuggestions: function(suggestions) {
         this._suggestions = Array.isArray(suggestions) ? suggestions : [];
-        this._isLoading = false;
+        this._loading = false;
 
         if (this._suggestions.length === 0) {
           this.$.dropdown.close();

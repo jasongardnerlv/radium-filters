@@ -28,36 +28,38 @@
     <radium-filter-querystring filters="[[_filters]]" terms="{{_terms}}"></radium-filter-querystring>
     <div class="fit horizontal layout">
       <div id="panelWrapper">
-        <radium-filter-panel id="filterpanel" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-panel>
+        <radium-filter-panel id="filterpanel" filters="[[_filters]]" terms="{{_terms}}" loading="{{_loading}}"></radium-filter-panel>
       </div>
       <div class="flex">
-        <radium-filter-bar id="filterbar" label="Test" filters="[[_filters]]" terms="{{_terms}}"></radium-filter-bar>
+        <radium-filter-bar id="filterbar" label="Test" filters="[[_filters]]" terms="{{_terms}}" loading="{{_loading}}"></radium-filter-bar>
         <div>
-          <div id="filter-results">
-            <h2>radium-filters demo</h2>
-            <div style="text-decoration:underline"><b>Selected Customer</b></div>
-            <div>{{_selectedCustomer}}</div>
-            <br/>
-            <div style="text-decoration:underline"><b>Selected Affiliates</b></div>
-            <template is="dom-repeat" items="{{_selectedAffiliates}}">
-              <div>{{item}}</div>
-            </template>
-            <br/>
-            <div style="text-decoration:underline"><b>Selected States</b></div>
-            <template is="dom-repeat" items="{{_selectedStates}}">
-              <div>{{item}}</div>
-            </template>
-            <br/>
-            <div style="text-decoration:underline"><b>Selected Sales Rep</b></div>
-            <div>{{_selectedRep}}</div>
-            <br/>
-            <div style="text-decoration:underline"><b>Selected Quarter</b></div>
-            <div>{{_selectedQtr}}</div>
-            <br/>
-            <div style="text-decoration:underline"><b>Ad-hoc Filter</b></div>
-            <div>{{_adhoc}}</div>
+          <template is="dom-if" if="[[!_loading]]">
+            <div id="filter-results">
+              <h2>radium-filters demo</h2>
+              <div style="text-decoration:underline"><b>Selected Customer</b></div>
+              <div>{{_selectedCustomer}}</div>
+              <br/>
+              <div style="text-decoration:underline"><b>Selected Affiliates</b></div>
+              <template is="dom-repeat" items="{{_selectedAffiliates}}">
+                <div>{{item}}</div>
+              </template>
+              <br/>
+              <div style="text-decoration:underline"><b>Selected States</b></div>
+              <template is="dom-repeat" items="{{_selectedStates}}">
+                <div>{{item}}</div>
+              </template>
+              <br/>
+              <div style="text-decoration:underline"><b>Selected Sales Rep</b></div>
+              <div>{{_selectedRep}}</div>
+              <br/>
+              <div style="text-decoration:underline"><b>Selected Quarter</b></div>
+              <div>{{_selectedQtr}}</div>
+              <br/>
+              <div style="text-decoration:underline"><b>Ad-hoc Filter</b></div>
+              <div>{{_adhoc}}</div>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   </template>
@@ -68,23 +70,47 @@
     }
 
     var mockData = {}; // Populated further below.
-    function fetchCompanies(query, done) {
-      setTimeout(function() {
-        var filteredResults = mockData.names
-          .filter(function(result) {
-            return result.label.toLowerCase().indexOf(query.toLowerCase()) != -1;
-          })
-          .sort(function(a, b) {
-            if (a.label < b.label) return -1;
-            if (a.label > b.label) return 1;
-            return 0;
-          });
-        done(filteredResults);
-      }, 400);
+    function getNamesByValues(values) {
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          var filteredResults = mockData.names
+            .filter(function(result) {
+              return values.indexOf(result.value) != -1;
+            });
+          resolve(filteredResults);
+        }, 500);
+      });
+    }
+
+    function searchNames(searchText) {
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          var filteredResults = mockData.names
+            .filter(function(result) {
+              return result.label.toLowerCase().indexOf(searchText.toLowerCase()) != -1;
+            })
+            .sort(function(a, b) {
+              if (a.label < b.label) return -1;
+              if (a.label > b.label) return 1;
+              return 0;
+            });
+          resolve(filteredResults);
+        }, 500);
+      });
+    }
+
+    function personSource(query, done) {
+      if (Array.isArray(query)) {
+        getNamesByValues(query).then(done);
+      }
+      else {
+        searchNames(query).then(done);
+      }
     }
 
     app._terms = [];
 
+    app._loading = false;
     app._selectedCustomer = '';
     app._selectedAffiliates = [];
     app._selectedStates = [];
@@ -139,20 +165,20 @@
         label: 'Customer',
         key: 'customer',
         options: {
-          source: fetchCompanies
+          source: personSource
         }
       },
       {
         type: 'autocompletelist',
-        label: 'Affiliate(s)s',
+        label: 'Affiliate',
         key: 'affiliate',
         options: {
-          source: fetchCompanies
+          source: personSource
         }
       },
       {
         type: 'checkboxlist',
-        label: 'State(s)',
+        label: 'State',
         key: 'state',
         values: [
           {label:'California', value:'California'},

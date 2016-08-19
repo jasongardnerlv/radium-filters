@@ -81,6 +81,17 @@ Header bar Polymer element for doing filters / faceted search.
       color: #ffffff;
     }
 
+    #loadingIndicatorContainer {
+      height: 100%;
+    }
+
+    paper-spinner {
+      --paper-spinner-layer-1-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-2-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
+    }
+
     @media (min-width: 600px) {
       .filterbar .chip-container {
         overflow: hidden;
@@ -94,24 +105,33 @@ Header bar Polymer element for doing filters / faceted search.
       <div hidden$="[[hideFilterIcon]]">
         <iron-icon icon="filter-list"></iron-icon>
       </div>
-      <div class="chip-container flex">
-        <div class="horizontal layout wrap">
-          <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
-            <paper-button data-term$="[[item]]" on-click="_termClicked">
-              <div class="chip-label-container">
-                <span class="chip-label">
-                  <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
-                  <span class="term-label">[[item.label]]</span>
-                </span>
-              </div>
-              <iron-icon icon="cancel"></iron-icon>
-            </paper-button>
-          </template>
+      <template is="dom-if" if="[[loading]]">
+        <div class="flex">
+          <div id="loadingIndicatorContainer" class="vertical center-center layout">
+            <paper-spinner active="[[loading]]"></paper-spinner>
+          </div>
         </div>
-      </div>
-      <div>
-        <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
-      </div>
+      </template>
+      <template is="dom-if" if="[[!loading]]">
+        <div class="chip-container flex">
+          <div class="horizontal layout wrap">
+            <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
+              <paper-button data-term$="[[item]]" on-click="_termClicked">
+                <div class="chip-label-container">
+                  <span class="chip-label">
+                    <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
+                    <span class="term-label">[[item.label]]</span>
+                  </span>
+                </div>
+                <iron-icon icon="cancel"></iron-icon>
+              </paper-button>
+            </template>
+          </div>
+        </div>
+        <div>
+          <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
+        </div>
+      </template>
     </div>
   </template>
 </dom-module>
@@ -123,11 +143,30 @@ Header bar Polymer element for doing filters / faceted search.
       behaviors: [RadiumFilterBehavior],
 
       properties: {
+        /**
+         * Set to true to hide the filter label.
+         *
+         * @type boolean
+         */
         hideFilterLabel: {
           type: Boolean,
           value: false
         },
+        /**
+         * Set to true to hide the filter icon.
+         *
+         * @type boolean
+         */
         hideFilterIcon: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * Set to true to show a loading indicator.
+         *
+         * @type boolean
+         */
+        loading: {
           type: Boolean,
           value: false
         }
