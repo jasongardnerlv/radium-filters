@@ -21,10 +21,39 @@ Material Design Dropdown/Typeahead/Combobox control
     :host([type='combobox']) #input {
       cursor: text;
     }
+    label, #input {
+      padding-right: 24px;
+      box-sizing: border-box;
+    }
+    #input {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #input.clear-shown {
+      padding-right: 48px;
+    }
+    #input[disabled] {
+      opacity: 1.0;
+      -webkit-text-fill-color: #212121;
+      -webkit-user-select: none;
+      user-select: none;
+    }
     #dropdown {
       margin-top: 56px;
       background-color: #FFFFFF;
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    }
+    :host([no-label-float]) #dropdown {
+      margin-top: 36px;
+    }
+    #clear-icon {
+      position: absolute;
+      right: 24px;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      padding: 2px;
     }
     #dropdown-icon {
       position: absolute;
@@ -44,26 +73,39 @@ Material Design Dropdown/Typeahead/Combobox control
     paper-input-container:focus {
      outline: 0;
     }
+    paper-item span {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow-x: hidden;
+    }
   </style>
   <template>
-    <paper-input-container id="input-container" on-click="_dropdownAction" disabled$="[[disabled]]" tabindex="0"
-      on-keydown="_containerKeyHandler">
+    <paper-input-container id="input-container" disabled$="[[disabled]]" tabindex="0"
+      always-float-label="[[alwaysFloatLabel]]"  no-label-float="[[noLabelFloat]]"
+      on-keydown="_containerKeyHandler" on-down="_dropdownAction" title$="[[_inputValue]]">
       <label>[[label]]</label>
-      <input id="input" is="iron-input" type="text" on-input="_inputValueChanged" on-blur="_onInputBlur"
+      <input id="input" is="iron-input" type="text" autocomplete="off" on-input="_inputValueChanged"
+        on-focus="_onInputFocus" on-blur="_onInputBlur"
         on-keydown="_keyHandler" disabled class="paper-input-input"></input>
-      <iron-icon id="dropdown-icon" icon="[[_dropdownIcon()]]"></iron-icon>
+      <iron-icon id="clear-icon" icon="clear" hidden$="[[!_showClearIcon(showClearButton, _inputValue)]]" on-tap="_clearTapped"></iron-icon>
+      <iron-icon id="dropdown-icon" icon="[[_dropdownIcon(_open)]]"></iron-icon>
     </paper-input-container>
-    <iron-dropdown id="dropdown" on-iron-overlay-closed="_dropdownClosed">
+    <iron-dropdown id="dropdown" no-cancel-on-outside-click no-overlap on-iron-overlay-opened="_dropdownOpened" on-iron-overlay-closed="_dropdownClosed">
       <div class="dropdown-content">
+        <template is="dom-if" if="[[_checkShowNoMatches(noMatchesLabel, type, _filteredOptions)]]">
+          <paper-item value="">
+            <span>[[noMatchesLabel]]</span>
+          </paper-item>
+        </template>
         <iron-selector id="selector" attrForSelected="value">
           <template is="dom-if" if="[[_checkShowEmpty(_showEmpty, type)]]">
-            <paper-item on-click="_hideDropdown" value="">
+            <paper-item on-down="_onItemDown" on-touchend="_onItemTouchEnd" on-tap="_selectItem" value="">
               <span>[[emptyOptionLabel]]</span>
             </paper-item>
           </template>
           <template is="dom-repeat" items="[[_filteredOptions]]">
-            <paper-item on-click="_hideDropdown" value="[[item.__value]]">
-              <span>[[item.__label]]</span>
+            <paper-item on-down="_onItemDown" on-touchend="_onItemTouchEnd" on-tap="_selectItem" value="[[item.__value]]">
+              <span title$="[[item.__label]]">[[item.__label]]</span>
             </paper-item>
           </template>
         </iron-selector>
@@ -87,12 +129,23 @@ Material Design Dropdown/Typeahead/Combobox control
       ],
       properties: {
         /**
+         * Always float the floating label.
+         */
+        alwaysFloatLabel: {
+          type: Boolean,
+          value: false
+        },
+        /**
          * Optional floating label for the input control
          */
         label: {
           type: String,
           value: ""
         },
+        /**
+         * Hide the floating label
+         */
+        noLabelFloat:Boolean,
         /**
          * Whether or not the control should be disabled
          */
@@ -106,8 +159,8 @@ Material Design Dropdown/Typeahead/Combobox control
          * Currently selected value
          */
         value: {
-          type: String,
-          value: '',
+          type: Object,
+          value: function() { return {}; },
           notify: true,
           observer: '_valueChanged'
         },
@@ -141,6 +194,13 @@ Material Design Dropdown/Typeahead/Combobox control
           type: String
         },
         /**
+         * Placeholder text if no matches (for typeahead).
+         */
+        noMatchesLabel: {
+          type: String,
+          value: 'No matches'
+        },
+        /**
          * The type of selection control
          * Choices are:
          *    dropdown
@@ -161,9 +221,21 @@ Material Design Dropdown/Typeahead/Combobox control
           value: 'true',
           observer: '_emptyChanged'
         },
+        /**
+         * Whether or not to include a clear button in the input, allowing the
+         * user to unselect
+         */
+        showClearButton: {
+          type: Boolean,
+          value: false
+        },
         _showEmpty: {
           type: Boolean,
           value: true
+        },
+        _inputValue: {
+          type: String,
+          value: ''
         },
         _optionsInternal: {
           type: Array,
@@ -175,35 +247,31 @@ Material Design Dropdown/Typeahead/Combobox control
         },
         _open: {
           type: Boolean,
-          default: false
+          value: false
         },
-        _boundOnCaptureClick: {
-          type: Function,
-          value: function() {
-            return this._onCaptureClick.bind(this);
-          }
+        _ignoreBlur: {
+          type: Boolean,
+          value: false
         }
-      },
-      listeners: {
-        'tap': '_updateSelected'
       },
       observers: [
         '_optionsSplicesChanged(options.splices)'
       ],
+      _boundCaptureTap: null,
       _boundResizeHandler: null,
-      _valueChanged: function(v, old) {
-        var normalized;
-        if (this._isObject(v)) {
-          normalized = v;
-        } else {
+      _valueChanged: function(v) {
+        if (!this._isObject(v)) {
           var vm = this._findValueMatch(v);
-          if (vm === null) {
-            this._setInputValue('');
-            return;
+          if (vm !== null) {
+            this.value = vm.match;
           }
-          this.value = vm.match;
         }
-        this._setInputValue(this.value.__label);
+        if (this.value) {
+          this._setInputValue(this.value.__label || '');
+        }
+        else {
+          this._setInputValue('');
+        }
       },
       _typeChanged: function(v) {
         if (v) {
@@ -266,11 +334,19 @@ Material Design Dropdown/Typeahead/Combobox control
       _isDropdown: function() {
         return (this.type.toLowerCase() !== 'combobox' && this.type.toLowerCase() !== 'typeahead');
       },
+      _showClearIcon: function(showClearButton, inputValue) {
+        var iconShown = showClearButton && inputValue && inputValue.length > 0;
+        this.toggleClass('clear-shown', iconShown, this.querySelector('#input'));
+        return iconShown;
+      },
       _checkShowEmpty: function(e, t) {
         return (e === true && this._isDropdown);
       },
-      _dropdownIcon: function() {
-        if (this._open) {
+      _checkShowNoMatches: function(noMatchesLabel, type, options) {
+        return (noMatchesLabel && noMatchesLabel.length > 0 && type.toLowerCase() === 'typeahead' && options.length === 0);
+      },
+      _dropdownIcon: function(open) {
+        if (open) {
           return 'arrow-drop-up';
         } else {
           return 'arrow-drop-down';
@@ -283,46 +359,51 @@ Material Design Dropdown/Typeahead/Combobox control
           this._openDropdown();
         }
       },
-      _onCaptureClick: function(e) {
-        var node = e.target;
-        while (node != null) {
-          if (node == this) {
-            break;
-          }
-          node = node.parentNode;
-        }
-        if (node === null) {
-          this.async(function() {
-            this._hideDropdown();
-          }, 10);
+      _onCaptureTap: function(e) {
+        if (!this.contains(e.target)) {
+          this.$.input.blur();
+          this._hideDropdown();
         }
       },
-      _openDropdown : function() {
+      _openDropdown: function() {
         if (this._open === false) {
-          this._open = true;
-          document.addEventListener('click', this._boundOnCaptureClick, true);
           this.$.dropdown.style.width = this.$['input-container'].offsetWidth + 'px';
           this.$.dropdown.positionTarget = this;
           this.$.dropdown.open();
+          var isListItemSelected = this.value.__label !== undefined && this.value.__value !== undefined;
+          if (this.$.input.value === this.value.__label && isListItemSelected) {
+            this._filterOptions('');
+          }
+          // Select the dropdown item based on the current value.
+          this._setSelectorSelected(this._findFilteredOptionValueIndex(this.value.__value));
         }
       },
-      _hideDropdown : function() {
+      _hideDropdown: function() {
         if (this._open === true) {
-          this._open = false;
-          document.removeEventListener('click', this._boundOnCaptureClick, true);
           this.$.dropdown.close();
         }
       },
+      _dropdownOpened: function() {
+        this._open = true;
+      },
       _dropdownClosed: function() {
         this._open = false;
+      },
+      _clearTapped: function (e) {
+        e.stopImmediatePropagation();
+
+        this.clearSelection(true);
       },
       _handleFloatingLabel: function(value) {
         this.$['input-container']._inputHasContent = !(!value || value === null || value === '');
       },
       _inputValueChanged: function(e) {
         var input = e.target.value;
+        this._inputValue = input;
         this._handleFloatingLabel(input);
         this._filterOptions(input);
+        // Select the dropdown item based on the current input.
+        this._setSelectorSelected(this._findFilteredOptionLabelIndex(input));
         this._openDropdown();
       },
       _applyValueFromInput: function() {
@@ -331,56 +412,48 @@ Material Design Dropdown/Typeahead/Combobox control
       _filterOptions: function(input) {
         if (!input || input === null || input === '') {
           this._filteredOptions = this._optionsInternal;
-          return;
         }
-        var newArr = [];
-        for (var i = 0; i < this._optionsInternal.length; i++) {
-          var opt = this._optionsInternal[i];
-          if (opt.__label.toLowerCase().indexOf(input.toLowerCase()) === 0) {
-            newArr.push(opt);
-          }
+        else {
+          this._filteredOptions = this._optionsInternal.filter(function(option) {
+            return option.__label.toLowerCase().indexOf(input.toLowerCase()) === 0;
+          });
         }
-        this._filteredOptions = newArr;
       },
-      _updateSelected: function(e) {
-        if (e !== null && (e.target.nodeName.toLowerCase() === 'paper-item' ||
-            e.target.parentNode.nodeName.toLowerCase() === 'paper-item')) {
-          var selIdx = this.$.selector.selected;
-          if (selIdx !== undefined) {
-            if (this._showEmpty === false) {
-              this._updateAndDispatch(this._filteredOptions[selIdx], true);
-            } else {
-              if (selIdx === 0) {
-                this._updateAndDispatch('', true);
-              } else {
-                this._updateAndDispatch(this._filteredOptions[selIdx - 1], true);
-              }
-            }
-          }
-        }
+      _selectItem: function(e) {
+        var item = e.currentTarget;
+        this.setValue(item.value, true);
+        this._hideDropdown();
       },
       _updateAndDispatch: function(value, dispatch) {
-        this.value = value;
-        if (typeof dispatch !== 'undefined' && dispatch === true) {
-          this.fire('option-change', {label:value.__label, value:value.__value});
+        if (!(this.value.__label === value.__label && this.value.__value === value.__value)) {
+          this.value = value;
+          if (dispatch === true) {
+            this.fire('option-change', {label:value.__label, value:value.__value});
+          }
         }
       },
-      _applyInitialValue: function() {
-        if (this.value && this.value !== '') {
-          var idx = this._optionsInternal.indexOf(this.value);
-          if (this._showEmpty === true) {
-            idx = idx + 1;
-          }
-          this.$.selector.select(idx);
-        }
+      _onItemDown: function(e) {
+        // NOTE: Input blur event fires after "down" but before "tap" - don't perform blur logic when an item is tapped.
+        this._ignoreBlur = true;
+      },
+      _onItemTouchEnd: function(e) {
+        // NOTE: This prevents synthesized "click" events that will bleed through and click items under the dropdown.
+        e.preventDefault();
+      },
+      _onInputFocus: function() {
+        this._ignoreBlur = false;
+        this._openDropdown();
       },
       _onInputBlur: function() {
-        this._applyValueFromInput();
+        if (!this._ignoreBlur) {
+          this._applyValueFromInput();
+          this._hideDropdown();
+        }
+        this._ignoreBlur = false;
       },
       _containerKeyHandler: function(e) {
         if (document.activeElement === this.$['input-container']) {
-          if (this._open === false &&
-              (e.keyIdentifier.toLowerCase() === 'enter' || e.keyIdentifier.toLowerCase() === 'u+0020')) {
+          if (this._open === false && (e.key === 'Enter' || e.key === ' ')) {
             this._openDropdown();
           } else {
             this._keyHandler(e);
@@ -388,21 +461,21 @@ Material Design Dropdown/Typeahead/Combobox control
         }
       },
       _keyHandler: function(e) {
-        if (e.keyIdentifier.toLowerCase() === 'enter') {
+        if (e.key === 'Enter') {
           this._applyValueFromInput();
           return;
         }
-        if (this._open === true && e.keyIdentifier.toLowerCase() === 'u+0009') {
+        if (this._open === true && e.key === 'Control') {
           e.preventDefault();
           return;
         }
         this._handleKeyboardArrows(e);
       },
       _handleKeyboardArrows: function(e) {
-        if (e.keyIdentifier.toLowerCase() !== 'up' && e.keyIdentifier.toLowerCase() !== 'down') {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
           return;
         }
-        var isUp = (e.keyIdentifier.toLowerCase() === 'up');
+        var isUp = (e.key === 'ArrowUp');
         this._openDropdown();
         var idx = (typeof this.$.selector.selected === 'undefined') ? -1 : this.$.selector.selected;
         if (isUp === true) {
@@ -424,22 +497,44 @@ Material Design Dropdown/Typeahead/Combobox control
         }
 
         this.$.selector.selected = idx;
-        this.value = this._filteredOptions[(this._showEmpty === true) ? idx - 1 : idx];
+
+        var option = this._filteredOptions[(this._showEmpty === true) ? idx - 1 : idx];
+        this.$.input.value = (option) ? option.__label : '';
+
+        var dropdown = this.$.selector.parentNode;
+
         var itemHeight = 49;
-        var numVisible = Math.floor(this.$.selector.parentNode.offsetHeight / itemHeight);
+        var numVisible = Math.floor(dropdown.offsetHeight / itemHeight);
+        var startVisibleIdx = Math.floor(dropdown.scrollTop / itemHeight);
         if (isUp) {
-          this.$.selector.parentNode.scrollTop = (idx < this._filteredOptions.length - numVisible) ? idx * itemHeight :
-                                        ((this._filteredOptions.length - 1) * itemHeight);
-        } else {
-          this.$.selector.parentNode.scrollTop = (idx >= numVisible) ? idx * itemHeight : 0;
+          if (idx < startVisibleIdx) {
+            dropdown.scrollTop = idx * itemHeight;
+          }
+        }
+        else {
+          if (idx >= startVisibleIdx + numVisible) {
+            dropdown.scrollTop = (idx - (numVisible - 1)) * itemHeight;
+          }
         }
       },
-      _findValueMatch: function(v) {
-        if ((v === null) || (v === undefined))
-        {
+      _findLabelMatch: function(lbl) {
+        if ((lbl === null) || (lbl === undefined)) {
           return null;
         }
-
+        if (this._optionsInternal) {
+          for (var idx = 0; idx < this._optionsInternal.length; idx++ ) {
+            var opt = this._optionsInternal[idx];
+            if ( opt && opt.__label.toLowerCase() === lbl.toLowerCase() ) {
+              return {match:opt, index:idx};
+            }
+          }
+        }
+        return null;
+      },
+      _findValueMatch: function(v) {
+        if ((v === null) || (v === undefined)) {
+          return null;
+        }
         if (this._optionsInternal) {
           for (var idx = 0; idx < this._optionsInternal.length; idx++) {
             var opt = this._optionsInternal[idx];
@@ -450,40 +545,78 @@ Material Design Dropdown/Typeahead/Combobox control
         }
         return null;
       },
+      _findFilteredOptionLabelIndex: function(lbl) {
+        if ((lbl === null) || (lbl === undefined)) {
+          return -1;
+        }
+        if (this._filteredOptions) {
+          for (var idx = 0; idx < this._filteredOptions.length; idx++) {
+            var opt = this._filteredOptions[idx];
+            if (opt && opt.__label.toString() === lbl.toString()) {
+              return idx;
+            }
+          }
+        }
+        return -1;
+      },
+      _findFilteredOptionValueIndex: function(v) {
+        if ((v === null) || (v === undefined)) {
+          return -1;
+        }
+        if (this._filteredOptions) {
+          for (var idx = 0; idx < this._filteredOptions.length; idx++) {
+            var opt = this._filteredOptions[idx];
+            if (opt && opt.__value.toString() === v.toString()) {
+              return idx;
+            }
+          }
+        }
+        return -1;
+      },
       _isObject: function(val) {
         if (val === null) { return false;}
         return ( (typeof val === 'function') || (typeof val === 'object') );
       },
       _setInputValue: function(v) {
         this._handleFloatingLabel(v);
+        this._inputValue = v;
         this.$.input.value = v;
+      },
+      _setSelectorSelected: function(idx) {
+        if (this._showEmpty === true && idx >= 0) {
+          this.$.selector.selected = idx + 1;
+        }
+        else {
+          this.$.selector.selected = idx;
+        }
+      },
+      _setValue: function(lbl, match, dispatch) {
+        if (match !== null) {
+          this._setInputValue(match.match.__label || '');
+          this._updateAndDispatch(match.match, dispatch);
+        }
+        else {
+          if (this.type.toLowerCase() === 'combobox' && lbl) {
+            this._setInputValue(lbl);
+            this._updateAndDispatch({__label: lbl, __value: undefined}, dispatch);
+          }
+          else {
+            this._setInputValue('');
+            this._filterOptions('');
+            this._updateAndDispatch({}, dispatch);
+          }
+        }
+        this._hideDropdown();
       },
       /**
        * Use the provided label to select an item
        *
        * @param {String} lbl The value to make selected
-       * @param {Boolean} dispatch Whether or not to send a change event when deselecting
+       * @param {Boolean} dispatch Whether or not to send a change event when selecting
        */
       setValueFromLabel: function(lbl, dispatch) {
-        var match = null;
-        var idx = 0;
-        for (idx; idx < this._optionsInternal.length; idx++) {
-          var opt = this._optionsInternal[idx];
-          if (opt && opt.__label.toLowerCase() === lbl.toLowerCase()) {
-            match = opt;
-            break;
-          }
-        }
-        if (match !== null) {
-          this._updateAndDispatch(match, dispatch);
-          this.$.selector.select(idx);
-        } else if (this.type.toLowerCase() === 'combobox') {
-          this._updateAndDispatch({__label:lbl,__value:undefined}, dispatch);
-          this.$.selector.select(-1);
-        } else {
-          this.clearSelection(dispatch);
-        }
-        this._hideDropdown();
+        var match = this._findLabelMatch(lbl);
+        this._setValue(lbl, match, dispatch);
       },
       /**
        * Use the provided value to select an item
@@ -492,17 +625,8 @@ Material Design Dropdown/Typeahead/Combobox control
        * @param {Boolean} dispatch Whether or not to send a change event when selecting
        */
       setValue: function(v, dispatch) {
-        var vm = this._findValueMatch(v);
-        if (vm !== null) {
-          this._updateAndDispatch(vm.match, dispatch);
-          this.$.selector.select(vm.index);
-        } else if (this.type.toLowerCase() === 'combobox') {
-          this._updateAndDispatch({__label:v,__value:undefined}, dispatch);
-          this.$.selector.select(-1);
-        } else {
-          this.clearSelection(dispatch);
-        }
-        this._hideDropdown();
+        var match = this._findValueMatch(v);
+        this._setValue(v, match, dispatch);
       },
       /**
        * Clear the current selection
@@ -510,21 +634,18 @@ Material Design Dropdown/Typeahead/Combobox control
        * @param {Boolean} dispatch Whether or not to send a change event when deselecting
        */
       clearSelection: function(dispatch) {
-        this._setInputValue('');
-        this._updateAndDispatch('', dispatch);
-        this.$.selector.select(-1);
+        this._setValue(null, null, dispatch);
       },
       attached: function() {
         this.$.dropdown.positionTarget = null;
+        this._boundOnCaptureTap = this._onCaptureTap.bind(this);
         this._boundResizeHandler = this._hideDropdown.bind(this);
+        document.addEventListener('tap', this._boundOnCaptureTap, true);
         window.addEventListener('resize:end', this._boundResizeHandler, false);
       },
       detached: function() {
         window.removeEventListener('resize:end', this._boundResizeHandler, false);
-      },
-      ready: function() {
-        this.async(function() { this._applyInitialValue(); });
-        this._open = false;
+        document.removeEventListener('tap', this._boundOnCaptureTap, true);
       }
     });
   })();

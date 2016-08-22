@@ -33,6 +33,7 @@
     "paper-item": "PolymerElements/paper-item#^1.0.5"
   },
   "devDependencies": {
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#^1.0.11",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
     "web-component-tester": "Polymer/web-component-tester#^3.3.0",
     "test-fixture": "PolymerElements/test-fixture#^1.0.0"

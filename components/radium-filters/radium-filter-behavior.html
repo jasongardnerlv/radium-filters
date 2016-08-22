@@ -1,136 +1,285 @@
-<link rel="import" href="radium-querystring-behavior.html">
 <script>
+  /**
+   * Filter value.
+   *
+   * @typedef {(
+   *  label: (string),
+   *  value: (number|string)
+   * )} FilterValue
+   */
 
-/**
- * Functions that synchronize filter parameters via the query string
- *
- * @polymerBehavior
- */
-  RadiumFilterBehaviorImpl = {
+  /**
+   * Filters.
+   *
+   * @typedef {(
+   *  type: (string),
+   *  label: (string),
+   *  key: (string),
+   *  values: (Array<FilterValue>)
+   * )} Filter
+   */
 
-    /**
-     * @private
-     */
-    _getQueryParamKey: function() {
-      return 'filter-term';
+  /**
+   * Filter term - the (persistable) result of selecting a filter value.
+   *
+   * @typedef {(
+   *  key: (string),
+   *  value: (number|string)
+   * )} FilterTerm
+   */
+
+  /**
+   * Common properties and helper methods shared by filter components.
+   *
+   * @polymerBehavior
+   */
+  RadiumFilterBehavior = {
+
+    properties: {
+      /**
+       * Available set of filters.
+       *
+       * @type Array<Filter>
+       */
+      filters: {
+        type: Array,
+        value: function () { return []; }
+      },
+      /**
+       * Selected filter terms.
+       *
+       * @type Array<FilterTerm>
+       */
+      terms: {
+        type: Array,
+        value: function () { return []; },
+        notify: true
+      }
     },
 
     /**
-     * Retrieve the current filter.
+     * Replaces (or adds) a new filter value to the filter matching the specified key.
      *
-     * @param {String} prefix Value prefix of terms to retrieve (omit to return all filters)
-     * @return {Array} Current filter values from the query string.
+     * @param {string} key
+     * @param {string} label
+     * @param {number|string} value
      */
-    getCurrentFilters: function(prefix) {
-      var terms = [];
-      var stripClassifier = function(term) {
-        if (term.indexOf(':') !== -1) {
-          return term.split(':')[1];
-        } else {
-          return term;
-        }
-      };
-
-      var queryParamKey = this._getQueryParamKey();
-      var params = this.getQueryParams();
-      if (params[queryParamKey] !== undefined) {
-        params[queryParamKey].forEach(function (term) {
-          if (prefix === undefined) {
-            terms.push(term);
-          } else if (term.indexOf(prefix + ':') === 0) {
-            terms.push(stripClassifier(term));
-          }
-        }.bind(this));
-      }
-      console.dir(terms);
-      return terms;
-    },
-
-    /**
-     * Evaluate the query string filter terms and produce a filter-change event
-     */
-    setFilterTerms: function() {
-      var qTerms = this.getCurrentFilters();
-      this._terms = [];
-
-      for (var i = 0; i < qTerms.length; i++) {
-        var termParts = qTerms[i].split(':');
-        for (var j = 0; j < this.filters.length; j++) {
-          var ftr = this.filters[j];
-          if (termParts[0] === ftr.key) {
-            if (ftr.values) {
-              for (var k = 0; k < ftr.values.length; k++) {
-                var ftrval = ftr.values[k];
-                if (typeof ftrval == 'object') {
-                  if (ftr.values[k].value.toString() === termParts[1].toString()) {
-                    this.push('_terms', { key : ftr.key, value : ftr.values[k].value, label : ftr.values[k].label });
-                  }
-                } else if (ftrval.toString() === termParts[1].toString()) {
-                  this.push('_terms', { key : ftr.key, value : ftrval, label : ftrval });
-                }
-              }
-            } else {
-              this.push('_terms', { key : ftr.key, value : termParts[1], label : termParts[1] });
-            }
-          }
-        }
-      }
-
-      this._terms.sort(function(a, b) {
-        if (a.value < b.value) {
-          return -1;
-        } else if (a.value > b.value) {
-          return 1;
-        } else {
-          return 0;
-        }
+    replaceFilterValue: function(key, label, value) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
       });
-
-      this.fire('filter-change', this._terms);
-    },
-
-    /**
-     * Add a filter to the query string.
-     *
-     * @param {String} value The value of the filter to add.
-     */
-    addFilter: function(value) {
-      this.addQueryParam(this._getQueryParamKey(), value);
-    },
-
-    /**
-     * Remove the current filter.
-     *
-     * @param {String} value Value of the filter to remove (omit to remove all)
-     */
-    removeFilter: function(value) {
-      if (value !== undefined) {
-        value = value.replace(/ /g, '%20'); //eww, this should be url encoding
+      if (filter) {
+        filter.values = (filter.values || []).filter(function(filterValue) {
+          return !(filterValue.value == value);
+        }).concat( {
+          label: label,
+          value: value
+        });
       }
-      this.removeQueryParam(this._getQueryParamKey(), value);
     },
 
     /**
-     * Remove the current filter.
+     * Sets the filter values for the filter matching the specified key.
      *
-     * @param {String} filterKey The value prefix of the param to be removed.
-     * @param {String} value Value of the filter to remove (omit to remove all with the value prefix)
+     * @param {string} key
+     * @param {Array<FilterTerm>} filterValues
      */
-    removeFilterByKey: function(filterKey, value) {
-      if (value !== undefined) {
-        value = value.replace(/ /g, '%20'); //eww, this should be url encoding
+    setFilterValues: function(key, filterValues) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        filter.values = filterValues;
       }
-      this.removeQueryParamByKey(this._getQueryParamKey(), filterKey, value);
     },
 
     /**
-     * Remove all current filters.
+     * Removes the filter value that corresponds to the specified filter key and/or value (if present).
+     *
+     * @param {string} key
+     * @param {number|string} value
      */
-    removeAllFilters: function() {
-      this.removeFilter();
+    removeFilterValue: function(key, value) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        if (value !== undefined) {
+          filter.values = (filter.values || []).filter(function(filter) {
+            return filter.value !== value;
+          });
+        }
+        else {
+          filter.values = [];
+        }
+      }
+    },
+
+    /**
+     * Finds the filter values for the specified filter key.
+     *
+     * @param {string} key
+     * @returns {Array<FilterValue>}
+     */
+    getFilterValues: function(key) {
+      var filter = this.filters.find(function(filter) {
+        return filter.key === key;
+      });
+      if (filter) {
+        return filter.values || [];
+      }
+      return [];
+    },
+
+    /**
+     * Finds the filter that corresponds to the specified term (if available).
+     *
+     * @param {FilterTerm} term
+     * @returns {Filter|undefined}
+     */
+    getFilterForTerm: function(term) {
+      return this.filters.find(function(filter) {
+        return filter.key === term.key;
+      });
+    },
+
+    /**
+     * Finds the filter value that corresponds to the specified term (if available).
+     *
+     * @param {FilterTerm} term
+     * @returns {FilterValue|undefined}
+     */
+    getFilterValueForTerm: function(term) {
+      var filter = this.getFilterForTerm(term);
+      if (filter) {
+        var filterValues = filter.values || [];
+        return filterValues.find(function(filterValue) {
+          return (filterValue.value == term.value);
+        });
+      }
+      return undefined;
+    },
+
+    /**
+     * Gets the filter label that corresponds to the specified term (if available), or returns an empty string.
+     *
+     * @param {FilterTerm} term
+     * @returns {number|string}
+     */
+    getFilterLabelForTerm: function(term) {
+      var filter = this.getFilterForTerm(term);
+      if (filter) {
+        return filter.label;
+      }
+      return '';
+    },
+
+    /**
+     * Gets the label that corresponds to the specified term (if available), or returns the term value.
+     *
+     * @param {FilterTerm} term
+     * @returns {number|string}
+     */
+    getLabelForTerm: function(term) {
+      var filterValue = this.getFilterValueForTerm(term);
+      if (filterValue) {
+        return filterValue.label;
+      }
+      return term.value;
+    },
+
+    /**
+     * Adds a new term for the specified filter key and value.
+     *
+     * @param {string} key
+     * @param {number|string} value
+     */
+    addTerm: function(key, value) {
+      this.terms = (this.terms || []).concat({
+        key: key,
+        value: value
+      });
+    },
+
+    /**
+     * Finds the term corresponding to the specified filter key and value (if present).
+     *
+     * @param {string} key
+     * @param {number|string} value
+     * @returns {FilterTerm|undefined}
+     */
+    findTerm: function(key, value) {
+      if (value !== undefined) {
+        return (this.terms || []).find(function(term) {
+          return (term.key === key && term.value === value);
+        });
+      }
+      else {
+        return (this.terms || []).find(function(term) {
+          return (term.key === key);
+        });
+      }
+    },
+
+    /**
+     * Finds the term corresponding to the specified filter key and value (if present).
+     *
+     * @param {string} key
+     * @param {number|string} value
+     * @returns {Array<FilterTerm>|undefined}
+     */
+    findTerms: function(key, value) {
+      if (value !== undefined) {
+        return (this.terms || []).filter(function(term) {
+          return (term.key === key && term.value === value);
+        });
+      }
+      else {
+        return (this.terms || []).filter(function(term) {
+          return (term.key === key);
+        });
+      }
+    },
+
+    /**
+     * Replaces (or adds) a term for the specified filter key and value.
+     *
+     * @param {string} key
+     * @param {number|string} value
+     */
+    replaceTerm: function(key, value) {
+      this.terms = (this.terms || []).filter(function(term) {
+        return !(term.key === key);
+      }).concat({
+        key: key,
+        value: value
+      });
+    },
+
+    /**
+     * Removes all terms.
+     */
+    removeAllTerms: function() {
+      this.terms = [];
+    },
+
+    /**
+     * Removes the term that corresponds to the specified filter key and/or value (if present).
+     *
+     * @param {string} key
+     * @param {number|string|undefined} value
+     */
+    removeTerm: function(key, value) {
+      if (value !== undefined) {
+        this.terms = (this.terms || []).filter(function(term) {
+          return !(term.key === key && term.value === value);
+        });
+      }
+      else {
+        this.terms = (this.terms || []).filter(function(term) {
+          return !(term.key === key);
+        });
+      }
     }
-
   };
-
-  RadiumFilterBehavior = [RadiumQueryStringBehavior, RadiumFilterBehaviorImpl];
 </script>

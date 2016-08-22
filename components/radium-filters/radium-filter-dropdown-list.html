@@ -1,0 +1,130 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../radium-combo/radium-combo.html">
+<!--
+Dropdown list filter component.
+
+@element radium-filter-dropdown-list
+@demo demo/index.html Basic demo
+-->
+<dom-module id="radium-filter-dropdown-list">
+  <style is="custom-style">
+    .value-row {
+      margin: 4px 0;
+      line-height: 20px;
+    }
+
+    .value-row .value-label {
+      display: inline-block;
+      width: calc(100% - 24px);
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+
+    .value-row iron-icon {
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+  </style>
+  <template>
+    <div class="dropdown-list vertical layout">
+      <div class="flex">
+        <template is="dom-repeat" items="[[value]]">
+          <div class="value-row">
+            <div class="value-label" title="[[_getOptionLabelForValue(options, item)]]">[[_getOptionLabelForValue(options, item)]]</div>
+            <iron-icon icon="cancel" on-tap="_removeValueClick"></iron-icon>
+          </div>
+        </template>
+      </div>
+      <radium-combo id="combo" type="[[type]]" options="[[_getFilteredListOptions(options, value)]]" include-empty="false" no-label-float on-option-change="_optionChange"></radium-combo>
+    </div>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    Polymer({
+      is: 'radium-filter-dropdown-list',
+
+      properties: {
+        options: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+        /**
+         * The type of selection control
+         * Choices are:
+         *    dropdown
+         *    typeahead
+         *    combobox
+         */
+        type: {
+          type: String,
+          value: 'dropdown'
+        },
+        value: {
+          type: Array,
+          value: function() {
+            return [];
+          },
+          observer: '_valueChanged'
+        }
+      },
+
+      ready: function() {
+        this.$.combo.value = '';
+      },
+
+      _getFilteredListOptions: function(options, selected) {
+        options = options || [];
+        if (selected && selected.length > 0) {
+          return options.filter(function(option) {
+            return selected.indexOf(option.value) === -1;
+          });
+        }
+        return options;
+      },
+
+      _getOptionLabelForValue: function(options, value) {
+        var option = (options || []).find(function(option) {
+          return option.value === value;
+        });
+        return (option && option.label) ? option.label : value;
+      },
+
+      _valueChanged: function(e) {
+        this.$.combo.value = '';
+      },
+
+      _optionChange: function(e) {
+        var option = e.detail;
+
+        if (option.label || option.value) {
+          var value = option.value || option.label;
+
+          this.value = (this.value || []).concat(value);
+          this.fire('value-added', { value: value });
+        }
+      },
+
+      _removeValueClick: function(e) {
+        var valueToRemove = e.model.__data__.item;
+
+        this.value = (this.value || []).filter(function(value) {
+          return value !== valueToRemove;
+        });
+        this.fire('value-removed', { value: valueToRemove });
+      }
+
+    });
+  })();
+</script>
