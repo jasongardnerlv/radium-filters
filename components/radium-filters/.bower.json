@@ -29,9 +29,12 @@
     "iron-flex-layout": "PolymerElements/iron-flex-layout#1.2.2",
     "iron-icon": "PolymerElements/iron-icon#1.0.7",
     "iron-icons": "PolymerElements/iron-icons#1.1.0",
+    "iron-resizable-behavior": "PolymerElements/iron-resizable-behavior#1.0.2",
     "paper-button": "PolymerElements/paper-button#1.0.10",
     "paper-checkbox": "PolymerElements/paper-checkbox#1.0.16",
     "paper-input": "PolymerElements/paper-input#1.1.2",
+    "paper-listbox": "PolymerElements/paper-listbox#1.1.0",
+    "paper-spinner": "PolymerElements/paper-spinner#1.1.0",
     "radium-combo": "jasongardnerlv/radium-combo#master"
   },
   "devDependencies": {
@@ -39,11 +42,11 @@
     "web-component-tester": "Polymer/web-component-tester#^3.3.0",
     "test-fixture": "PolymerElements/test-fixture#^1.0.0"
   },
-  "_release": "f6885f9c2c",
+  "_release": "8eb8b01f3a",
   "_resolution": {
     "type": "branch",
     "branch": "master",
-    "commit": "f6885f9c2cfb3008421975a99292f80ae478dd4f"
+    "commit": "8eb8b01f3ad85089ba2a47ad6287ff2bfd77f21a"
   },
   "_source": "git://github.com/jasongardnerlv/radium-filters.git",
   "_target": "master",

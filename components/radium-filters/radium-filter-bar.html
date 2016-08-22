@@ -4,62 +4,135 @@
 <link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="radium-filter-behavior.html">
+<!--
+Header bar Polymer element for doing filters / faceted search.
+
+@element radium-filter-bar
+@demo demo/index.html Basic demo
+-->
 <dom-module id="radium-filter-bar">
   <style is="custom-style">
     .filterbar {
-      background-color: #DDDDDD;
+      background-color: #F5F5F5;
+      border-radius: 16px;
       color: rgba(0, 0, 0, 0.87);
       line-height: 40px;
-      padding: 0px 24px;
+      min-height: 40px;
+      padding: 4px 8px;
     }
-    .filterbar-title {
-      margin: 0px 16px 0px 0px;
+    .filterbar > div {
+      margin-right: 8px;
     }
-    .filterbar paper-button {
-      margin: 0px 8px 0px 0px;
-      min-width: initial;
-      text-transform: none;
-      white-space: nowrap;
+    .filterbar > div:last-child {
+      margin-right: 0;
     }
-    .filterbar a {
-      text-align:right;
+    .filterbar .chip-container {
+      overflow: hidden;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    #clearIcon {
       cursor: pointer;
     }
     .filterbar paper-button {
-      padding: 0px;
+      display: inline-block;
+      box-sizing: border-box;
+      padding: 0 6px 0 12px;
+      margin: 4px;
+      min-width: initial;
+      height: 32px;
+      line-height: 32px;
+      text-transform: none;
+      white-space: nowrap;
+      cursor: pointer;
+      background-color: #E0E0E0;
+      border-radius: 16px;
+      overflow: hidden;
     }
     .filterbar paper-button > ::content paper-material {
       padding: 0px;
     }
-    .filterbar iron-icon {
-      color: #ff0000;
-      width: 14px;
-      height: 14px;
-      margin: 2px 0px 0px 0px;
+    .filterbar paper-button .chip-label-container {
+      display: inline-flex;
+      max-width: calc(100% - 20px);
+      margin: 0;
     }
-    .typo-body2 {
-      font-size: 14px !important;
-      font-weight: 500 !important;
+    .filterbar paper-button .chip-label {
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .typo-body1 {
-      font-size: 14px !important;
-      font-weight: 400 !important;
+    .filterbar paper-button .chip-label .filter-label {
+      font-weight: 500;
+    }
+    .filterbar paper-button iron-icon {
+      color: #9E9E9E;
+      width: 20px;
+      height: 20px;
+      margin-top: -2px;
+      line-height: 14px;
+    }
+    .filterbar paper-button:hover {
+      color: #ffffff;
+      background-color: #616161;
+    }
+    .filterbar paper-button:hover iron-icon {
+      color: #ffffff;
+    }
+
+    #loadingIndicatorContainer {
+      height: 100%;
+    }
+
+    paper-spinner {
+      --paper-spinner-layer-1-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-2-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
+    }
+
+    @media (min-width: 600px) {
+      .filterbar .chip-container {
+        overflow: hidden;
+        max-height: 140px;
+        overflow-y: auto;
+      }
     }
   </style>
   <template>
     <div class="filterbar horizontal layout">
-      <div class="filterbar-title typo-body2">Filtered By:</div>
-      <div class="flex">
-        <template is="dom-repeat" items="[[_terms]]">
-          <paper-button on-click="_termClicked" data-term$="[[item]]">
-            <span class="typo-body1">[[item.label]]</span>
-            <iron-icon icon="close"></iron-icon>
-          </paper-button>
-        </template>
+      <div hidden$="[[hideFilterIcon]]">
+        <iron-icon icon="filter-list"></iron-icon>
       </div>
-      <a on-click="_clear">
-        <span class="typo-body1">Clear All</span>
-      </a>
+      <template is="dom-if" if="[[loading]]">
+        <div class="flex">
+          <div id="loadingIndicatorContainer" class="vertical center-center layout">
+            <paper-spinner active="[[loading]]"></paper-spinner>
+          </div>
+        </div>
+      </template>
+      <template is="dom-if" if="[[!loading]]">
+        <div class="chip-container flex">
+          <div class="horizontal layout wrap">
+            <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
+              <paper-button data-term$="[[item]]" on-click="_termClicked">
+                <div class="chip-label-container">
+                  <span class="chip-label">
+                    <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
+                    <span class="term-label">[[item.label]]</span>
+                  </span>
+                </div>
+                <iron-icon icon="cancel"></iron-icon>
+              </paper-button>
+            </template>
+          </div>
+        </div>
+        <div>
+          <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
+        </div>
+      </template>
     </div>
   </template>
 </dom-module>
@@ -67,45 +140,58 @@
   (function() {
     Polymer({
       is: 'radium-filter-bar',
-      properties: {
-        filters: {
-          type: Array,
-          value: function() { return []; },
-          observer: '_filtersChanged'
-        },
-        _terms: {
-          type: Array,
-          value: function() { return []; }
-        },
-        _previousPath: {
-          type: String,
-          value: ''
-        }
-      },
+
       behaviors: [RadiumFilterBehavior],
-      _filtersChanged: function() {
-        this.async(function(){this._evaluateQueryString();}.bind(this));
-      },
-      _evaluateQueryString: function() {
-        var newPath = window.location.pathname + window.location.hash.split('?')[0];
-        if (this._previousPath === '' || newPath === this._previousPath) {
-          this.setFilterTerms();
+
+      properties: {
+        /**
+         * Set to true to hide the filter label.
+         *
+         * @type boolean
+         */
+        hideFilterLabel: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * Set to true to hide the filter icon.
+         *
+         * @type boolean
+         */
+        hideFilterIcon: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * Set to true to show a loading indicator.
+         *
+         * @type boolean
+         */
+        loading: {
+          type: Boolean,
+          value: false
         }
-        this._previousPath = newPath;
       },
+
+      _getChipsForFiltersAndTerms: function() {
+        return this.terms.map(function(term){
+          return {
+            filterLabel: this.getFilterLabelForTerm(term),
+            label: this.getLabelForTerm(term),
+            key: term.key,
+            value: term.value
+          }
+        }.bind(this));
+      },
+
+      _clearAllClicked: function() {
+        this.removeAllTerms();
+      },
+
       _termClicked: function(evt) {
-        var fltr = JSON.parse(evt.currentTarget.getAttribute('data-term'));
-        var filterTerm = fltr.key + ':' + encodeURIComponent(fltr.value);
-        this.removeFilter(filterTerm);
-      },
-      _clear: function() {
-        this.removeAllFilters();
-      },
-      ready: function() {
-        window.addEventListener('hashchange', this._evaluateQueryString.bind(this));
-        this._evaluateQueryString();
-      },
+        var term = JSON.parse(evt.currentTarget.getAttribute('data-term'));
+        this.removeTerm(term.key, term.value);
+      }
     });
   })();
 </script>
-

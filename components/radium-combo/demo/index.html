@@ -6,12 +6,18 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
   <title>radium-combo demo</title>
   <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="../../paper-toggle-button/paper-toggle-button.html">
   <link rel="import" href="../radium-combo.html">
   <style>body { font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif; }</style>
   <style is="custom-style">
     #demo-container {
       padding: 0px 2% !important;
       height: 100%;
+    }
+    #config-container {
+      padding: 16px 2% !important;
+      background-color: #efefef;
+      margin-top: 48px
     }
     .example-title {
       margin-top: 32px;
@@ -31,7 +37,7 @@
       font-weight: bold;
       font-size: 14px;
       display: inline-block;
-      margin-top: 48px;
+      margin-top: 24px;
     }
     .event-string {
       font-style: italic;
@@ -50,33 +56,38 @@
       <div class="example-col">
         <div class="example-title">Select w/ empty option label</div>
         <div class="example-selected">Selected - <span>[[_selected1.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" value="{{_selected1}}" empty-option-label="--unselect--"
-            on-option-change="_optionSelected"></radium-combo>
+        <radium-combo options="[[_myoptions]]" value="{{_selected1}}" show-clear-button="[[_showClearButton]]"
+            empty-option-label="--unselect--" on-option-change="_optionSelected"></radium-combo>
         <div class="example-title">Select w/ initial value</div>
         <div class="example-selected">Selected - <span>[[_selected2.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" value="{{_selected2}}"
+        <radium-combo options="[[_myoptions]]" value="{{_selected2}}" show-clear-button="[[_showClearButton]]"
             on-option-change="_optionSelected"></radium-combo>
         <div class="example-title">Select w/ no empty value (force selection)</div>
         <div class="example-selected">Selected - <span>[[_selected3.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" include-empty="false" value="{{_selected3}}"
+        <radium-combo options="[[_myoptions]]" include-empty="false" value="{{_selected3}}" show-clear-button="[[_showClearButton]]"
             on-option-change="_optionSelected"></radium-combo>
       </div>
       <div class="example-col" style="margin-left: 3%">
         <div class="example-title">Disabled</div>
         <div class="example-selected">Selected - <span>[[_selected4.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" disabled value="{{_selected4}}"
+        <radium-combo options="[[_myoptions]]" disabled value="{{_selected4}}" show-clear-button="[[_showClearButton]]"
             on-option-change="_optionSelected"></radium-combo>
         <div class="example-title">Typeahead</div>
         <div class="example-selected">Selected - <span>[[_selected5.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" type="typeahead" value="{{_selected5}}"
+        <radium-combo options="[[_myoptions]]" type="typeahead" value="{{_selected5}}" show-clear-button="[[_showClearButton]]"
             on-option-change="_optionSelected"></radium-combo>
         <div class="example-title">Combobox</div>
         <div class="example-selected">Selected - <span>[[_selected6.label]]</span></div>
-        <radium-combo options="[[_myoptions]]" type="combobox" value="{{_selected6}}"
+        <radium-combo options="[[_myoptions]]" type="combobox" value="{{_selected6}}" show-clear-button="[[_showClearButton]]"
             on-option-change="_optionSelected"></radium-combo>
       </div>
     </div><br>
-    <div class="event-label">Option Change Event:</div><div class="event-string">[[_lastEvent]]</div>
+    <div id="config-container">
+      <div>
+        <paper-toggle-button active="{{_showClearButton}}">Show Clear Button</paper-toggle-button>
+      </div>
+      <div class="event-label">Option Change Event:</div><div class="event-string">[[_lastEvent]]</div>
+    </div>
   </template>
   <script>
     app._myoptions = [{label:'Joe', value:'1'}

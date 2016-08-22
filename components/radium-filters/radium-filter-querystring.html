@@ -1,0 +1,121 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="radium-filter-behavior.html">
+<dom-module id="radium-filter-querystring"></dom-module>
+<!--
+Faceless element for persisting/restoring selected filter terms to/from the querystring.
+
+@element radium-filter-bar
+@demo demo/index.html Basic demo
+-->
+<script>
+  (function() {
+    Polymer({
+      is: 'radium-filter-querystring',
+
+      properties: {
+        /**
+         * Querystring parameter name to use when persisting/restoring terms.
+         */
+        termParameterKey: {
+          type: String,
+          value: 'filter-term',
+          observer: '_termParameterKeyChanged'
+        }
+      },
+
+      behaviors: [RadiumFilterBehavior],
+
+      observers: [
+        '_termChanged(terms)'
+      ],
+
+      attached: function() {
+        this._restoredQueryString = null;
+        this._restoreFromQueryString();
+
+        this._hashChangeListener = this._hashChanged.bind(this);
+        window.addEventListener('hashchange', this._hashChangeListener);
+      },
+
+      detached: function() {
+        window.removeEventListener('hashchange', this._hashChangeListener);
+      },
+
+      _getHash: function() {
+        return window.location.hash.split('?')[0];
+      },
+
+      _getQueryString: function() {
+        var queryString = document.location.hash.split('?')[1] || '';
+        if (queryString[queryString.length - 1] === '/') {
+          queryString = queryString.substring(0, queryString.length - 1);
+        }
+        return queryString;
+      },
+
+      _createQueryString: function() {
+        return this.terms.map(function (term) {
+          return this.termParameterKey + '=' + term.key + ':' + encodeURIComponent(term.value);
+        }.bind(this)).join('&');
+      },
+
+      _persistToQueryString: function() {
+        var currentQueryString = this._getQueryString();
+        var queryString = this._createQueryString();
+        if (queryString !== currentQueryString) {
+          window.location.hash = this._getHash() + (queryString ? '?' + queryString : '');
+        }
+      },
+
+      _restoreFromQueryString: function() {
+        var previousQueryString = this._createQueryString();
+        var queryString = this._getQueryString();
+        if (queryString !== previousQueryString) {
+          this.terms = queryString.split('&').reduce(function(result, parameter) {
+            var parameterPair = parameter.split('=');
+            var parameterKey = parameterPair[0], parameterValue = parameterPair[1];
+
+            if (parameterKey === this.termParameterKey && parameterValue !== undefined) {
+              var termPair = parameterValue.split(':');
+              var termKey = termPair[0], termValue = termPair[1];
+
+              if (termValue !== undefined) {
+                result.push({
+                  key: termKey,
+                  value: decodeURIComponent(termValue)
+                });
+              }
+            }
+
+            return result;
+          }.bind(this), []);
+          this.notifyPath('terms', this.terms);
+
+          // console.table(this.terms);
+
+          this.fire('filter-restored', this.terms);
+        }
+      },
+
+      _termChanged: function() {
+        if (this.isAttached) {
+          this._persistToQueryString();
+        }
+      },
+
+      _termParameterKeyChanged: function() {
+        if (this.isAttached) {
+          this._restoreFromQueryString();
+        }
+      },
+
+      _hashChanged: function() {
+        var queryString = this._getQueryString();
+        if (this._restoredQueryString !== queryString) {
+          this._restoreFromQueryString();
+          this._restoredQueryString = queryString;
+        }
+      }
+    });
+  })();
+</script>

@@ -10,40 +10,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../../polymer/polymer.html">
 
-<link rel="import" href="../iron-overlay-behavior.html">
-
-<dom-module id="test-overlay2">
-
-  <style>
-
-    :host {
-      background: white;
-      color: black;
-      border: 1px solid black;
-    }
-
-  </style>
-
+<dom-module id="disabled-input">
   <template>
-    <content></content>
+    <input is="iron-input" bind-value="{{myValue}}" invalid="{{myInvalid}}" disabled id="input">
   </template>
-
 </dom-module>
 
 <script>
-
-(function() {
-
   Polymer({
+    is: 'disabled-input',
+    properties: {
+      myValue: {
+        value: 'foo'
+      },
 
-    is: 'test-overlay2',
-
-    behaviors: [
-      Polymer.IronOverlayBehavior
-    ]
-
+      myInvalid: {
+        value: false
+      }
+    }
   });
-
-})();
-
 </script>

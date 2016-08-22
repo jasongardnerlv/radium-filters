@@ -32,15 +32,16 @@
     "paper-item": "PolymerElements/paper-item#^1.0.5"
   },
   "devDependencies": {
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#^1.0.11",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
     "web-component-tester": "Polymer/web-component-tester#^3.3.0",
     "test-fixture": "PolymerElements/test-fixture#^1.0.0"
   },
-  "_release": "ca5b514dcb",
+  "_release": "eaeb5ade1a",
   "_resolution": {
     "type": "branch",
     "branch": "master",
-    "commit": "ca5b514dcb52a2e283b4f30e212bad7354741ee9"
+    "commit": "eaeb5ade1ab9abde6406e908a1d2e574bc417e2a"
   },
   "_source": "git://github.com/jasongardnerlv/radium-combo.git",
   "_target": "master",

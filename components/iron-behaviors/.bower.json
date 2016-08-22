@@ -37,6 +37,6 @@
     "commit": "657f526a2382a659cdf4e13be87ecc89261588a3"
   },
   "_source": "git://github.com/PolymerElements/iron-behaviors.git",
-  "_target": "^1.0.0",
+  "_target": "1.0.12",
   "_originalSource": "PolymerElements/iron-behaviors"
 }
