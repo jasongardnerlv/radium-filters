@@ -97,7 +97,10 @@ Side Panel Polymer element for doing filters / faceted search.
     Polymer({
       is: 'radium-filter-panel',
 
-      behaviors: [RadiumFilterBehavior],
+      behaviors: [
+        Polymer.IronResizableBehavior,
+        RadiumFilterBehavior
+      ],
 
       properties: {
         /**
