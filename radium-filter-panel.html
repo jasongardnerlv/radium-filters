@@ -4,6 +4,8 @@
 <link rel="import" href="../paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../radium-combo/radium-combo.html">
 <link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="radium-filter-autocomplete.html">
+<link rel="import" href="radium-filter-autocomplete-list.html">
 <link rel="import" href="radium-filter-dropdown-list.html">
 <link rel="import" href="radium-filter-behavior.html">
 <!--
@@ -63,11 +65,30 @@ Side Panel Polymer element for doing filters / faceted search.
       font-size: 14px !important;
       font-weight: 400 !important;
     }
+
+    #loadingIndicatorContainer {
+      padding-top: 18px;
+      text-align: center;
+    }
+
+    paper-spinner {
+      --paper-spinner-layer-1-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-2-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
+      --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
+    }
   </style>
   <template>
     <div class="filter-wrapper">
-      <div class="typo-subheader filter-row">Filters</div>
-      <div id="filter-container"></div>
+      <div class="typo-subheader filter-row">
+        Filters
+      </div>
+      <template is="dom-if" if="[[loading]]">
+        <div id="loadingIndicatorContainer">
+          <paper-spinner active="[[loading]]"></paper-spinner>
+        </div>
+      </template>
+      <div id="filter-container" hidden$="[[loading]]"></div>
     </div>
   </template>
 </dom-module>
@@ -76,7 +97,24 @@ Side Panel Polymer element for doing filters / faceted search.
     Polymer({
       is: 'radium-filter-panel',
 
-      behaviors: [RadiumFilterBehavior],
+      behaviors: [
+        Polymer.IronResizableBehavior,
+        RadiumFilterBehavior
+      ],
+
+      properties: {
+        /**
+         * Indicates whether filter values are being loaded.
+         *
+         * @type boolean
+         */
+        loading: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        }
+      },
 
       observers: [
         '_filtersChanged(filters)',
@@ -120,6 +158,14 @@ Side Panel Polymer element for doing filters / faceted search.
               }.bind(this));
               break;
 
+            case 'autocomplete':
+              collapse.appendChild(this._createAutocompleteControl(filter));
+              break;
+
+            case 'autocompletelist':
+              collapse.appendChild(this._createAutocompleteListControl(filter));
+              break;
+
             case 'dropdownlist':
               collapse.appendChild(this._createDropdownListControl(filter));
               break;
@@ -160,6 +206,86 @@ Side Panel Polymer element for doing filters / faceted search.
         }.bind(this));
       },
 
+      _getMissingFilterValues: function(filter) {
+        var terms = this.findTerms(filter.key);
+        var filterValues = filter.values || [];
+        return terms.filter(function(term) {
+          var matchingFilterValue = filterValues.find(function(filterValue) {
+            return (filterValue.value == term.value);
+          });
+          return !matchingFilterValue;
+        }).map(function(term) {
+          return term.value;
+        });
+      },
+
+      _loadFilterValues: function() {
+        var requests = [];
+        if (this.filters && this.terms) {
+          this.filters.forEach(function(filter) {
+            switch (filter.type) {
+              case 'autocomplete':
+              case 'autocompletelist':
+                if (filter.options.source) {
+                  var missingFilterValuesValuesForTerms = this._getMissingFilterValues(filter);
+                  if (missingFilterValuesValuesForTerms.length > 0) {
+                    // Set the loading flag for this filter (cleared when the most recent request completes).
+                    this._setLoading(true);
+                    requests.push(
+                      new Promise(function(resolve) {
+                        // Fetch the missing filter values via the filter source.
+                        filter.options.source(missingFilterValuesValuesForTerms, function(suggestions) {
+                          // Evaluate the current terms, and gather the corresponding filter values.
+                          var terms = this.findTerms(filter.key);
+                          var filterValues = terms.map(function(term) {
+                            // Find the corresponding suggestion, if provided.
+                            var suggestion = suggestions.find(function(suggestion) {
+                              return (suggestion.value === term.value);
+                            });
+                            if (suggestion) {
+                              // Use the label/value returned as a suggestion as the new filter value.
+                              return {label: suggestion.label, value: suggestion.value};
+                            }
+                            else {
+                              // No corresponding suggestion was returned, check if we already have the filter value.
+                              var filterValue = this.getFilterValueForTerm(term);
+                              if (!filterValue) {
+                                // Create a new filter value, using the value as the label.
+                                return {label: term.value, value: term.value};
+                              }
+                              // Use the existing filter value.
+                              return filterValue;
+                            }
+                          }.bind(this));
+                          this.setFilterValues(filter.key, filterValues);
+                          resolve();
+                        }.bind(this));
+                      }.bind(this))
+                    );
+                  }
+                }
+                break;
+
+              default:
+                break;
+            }
+          }.bind(this));
+        }
+        if (requests.length > 0) {
+          var pendingRequests = Promise.all(requests);
+          this._mostRecentPendingRequests = pendingRequests;
+          pendingRequests.then(function() {
+            // Only if this is the most recent request.
+            if (pendingRequests == this._mostRecentPendingRequests) {
+              // Now we can safely clear the loading flag.
+              this._setLoading(false);
+              // Trigger the UI to re-render terms.
+              this.notifyPath('terms', this.terms.concat());
+            }
+          }.bind(this));
+        }
+      },
+
       _applyOptions: function(control, options) {
         for (var option in options) {
           control[option] = options[option];
@@ -196,10 +322,32 @@ Side Panel Polymer element for doing filters / faceted search.
         return checklist;
       },
 
+      _createAutocompleteControl: function(filter) {
+        var autocomplete = document.createElement('radium-filter-autocomplete');
+        autocomplete.setAttribute('data-filter-key', filter.key);
+        autocomplete.setAttribute('no-label-float', true);
+        autocomplete.filterValues = filter.values || [];
+        this._applyOptions(autocomplete, filter.options || {});
+        autocomplete.addEventListener('change', this._autocompleteChange.bind(this));
+        autocomplete.addEventListener('selected', this._autocompleteSelected.bind(this));
+        return autocomplete;
+      },
+
+      _createAutocompleteListControl: function(filter) {
+        var autocompleteList = document.createElement('radium-filter-autocomplete-list');
+        autocompleteList.setAttribute('data-filter-key', filter.key);
+        autocompleteList.filterValues = filter.values || [];
+        this._applyOptions(autocompleteList, filter.options || {});
+        autocompleteList.addEventListener('value-added', this._autocompleteListValueAdded.bind(this));
+        autocompleteList.addEventListener('value-removed', this._autocompleteListValueRemoved.bind(this));
+        return autocompleteList;
+      },
+
       _createDropdownControl: function(filter) {
         var dropdown = document.createElement('radium-combo');
         dropdown.setAttribute('data-filter-key', filter.key);
         dropdown.setAttribute('include-empty', false);
+        dropdown.setAttribute('no-label-float', true);
         dropdown.options = filter.values;
         this._applyOptions(dropdown, filter.options || {});
         dropdown.addEventListener('option-change', this._dropdownChanged.bind(this));
@@ -228,9 +376,17 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _setControlValues: function(control, values) {
+        var key = control.getAttribute('data-filter-key');
         switch (control.nodeName.toLowerCase()) {
           case 'paper-input':
-            control.value = values[0] || '';
+            control.value = (values[0] !== undefined && values[0] !== null) ? String(values[0]) : '';
+            break;
+          case 'radium-filter-autocomplete':
+            control.value = this.getLabelForTerm({key: key, value: values[0]});
+            break;
+          case 'radium-filter-autocomplete-list':
+            control.filterValues = this.getFilterValues(key);
+            control.value = values;
             break;
           case 'radium-combo':
             control.setValue(values[0] || '');
@@ -251,6 +407,12 @@ Side Panel Polymer element for doing filters / faceted search.
             break;
           case 'paper-checkbox':
             control.removeAttribute('checked');
+            break;
+          case 'radium-filter-autocomplete':
+            control.value = '';
+            break;
+          case 'radium-filter-autocomplete-list':
+            control.value = [];
             break;
           case 'radium-combo':
             control.clearSelection();
@@ -289,6 +451,46 @@ Side Panel Polymer element for doing filters / faceted search.
         }
       },
 
+      _autocompleteChange: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var query = e.currentTarget.value;
+        if (this.findTerm(key)) {
+          this.removeTerm(key);
+        }
+        e.currentTarget.value = query;
+      },
+
+      _autocompleteSelected: function(e) {
+        var autocomplete = e.currentTarget;
+        var key = autocomplete.getAttribute('data-filter-key');
+        var label = e.detail.label;
+        var value = e.detail.value;
+        if (value) {
+          this.setFilterValues(key, [{ label: label, value: value }]);
+          this.replaceTerm(key, value);
+        }
+        else {
+          this.setFilterValues(key, []);
+          this.removeTerm(key);
+        }
+      },
+
+      _autocompleteListValueAdded: function(e) {
+        var autocompleteList = e.currentTarget;
+        var key = autocompleteList.getAttribute('data-filter-key');
+        var label = e.detail.label;
+        var value = e.detail.value;
+        this.replaceFilterValue(key, label, value);
+        this.addTerm(key, value);
+      },
+
+      _autocompleteListValueRemoved: function(e) {
+        var autocompleteList = e.currentTarget;
+        var key = autocompleteList.getAttribute('data-filter-key');
+        var value = e.detail.value;
+        this.removeTerm(key, value);
+      },
+
       _dropdownChanged: function(e) {
         var key = e.currentTarget.getAttribute('data-filter-key');
         var value = e.detail.value;
@@ -313,11 +515,13 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _filtersChanged: function() {
+        this._loadFilterValues();
         this._createControls();
         this._populateControls();
       },
 
       _termsChanged: function() {
+        this._loadFilterValues();
         this._populateControls();
       }
     });
