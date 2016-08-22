@@ -101,7 +101,12 @@ Dropdown list filter autocomplete component..
             </div>
           </paper-item>
         </template>
-        <paper-listbox id="listbox" on-keydown="_onListboxKeydown">
+        <template is="dom-if" if="[[_hasNoMatches(_suggestions, _loading)]]">
+          <paper-item>
+            <span>[[noMatchesLabel]]</span>
+          </paper-item>
+        </template>
+        <paper-listbox id="listbox" on-keydown="_onListboxKeydown" hidden$="[[!_hasMatches(_suggestions, _loading)]]">
           <template is="dom-if" if="[[_hasMatches(_suggestions, _loading)]]">
             <template is="dom-repeat" items="[[_suggestions]]">
               <paper-item value="[[index]]" on-touchend="_onSuggestionItemTouchEnd" on-tap="_onSuggestionItemTap">
@@ -173,6 +178,13 @@ Dropdown list filter autocomplete component..
           reflectToAttribute: true
         },
         /**
+         * Placeholder text if no matches.
+         */
+        noMatchesLabel: {
+          type: String,
+          value: 'No matches'
+        },
+        /**
          * The text entered by the user / displayed in the input.
          */
         value: {
@@ -217,10 +229,7 @@ Dropdown list filter autocomplete component..
         this._suggestions = Array.isArray(suggestions) ? suggestions : [];
         this._loading = false;
 
-        if (this._suggestions.length === 0) {
-          this.$.dropdown.close();
-        }
-        else {
+        if (this._suggestions.length > 0) {
           this.$.listbox.select();
         }
       },
@@ -238,6 +247,10 @@ Dropdown list filter autocomplete component..
 
       _hasMatches: function(suggestions, loading) {
         return (!loading && suggestions.length > 0);
+      },
+
+      _hasNoMatches: function(suggestions, loading) {
+        return (!loading && suggestions.length === 0);
       },
 
       _clear: function() {
