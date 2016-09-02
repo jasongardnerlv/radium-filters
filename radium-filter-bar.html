@@ -31,7 +31,7 @@ Header bar Polymer element for doing filters / faceted search.
       max-height: 100px;
       overflow-y: auto;
     }
-    #clearIcon {
+    #clearAllIcon {
       cursor: pointer;
     }
     .filterbar paper-button {
@@ -130,7 +130,7 @@ Header bar Polymer element for doing filters / faceted search.
           </div>
         </div>
         <div>
-          <iron-icon id="clearIcon" icon="clear" on-click="_clearAllClicked"></iron-icon>
+          <iron-icon id="clearAllIcon" icon="clear" hidden$="[[hideClearAllButton]]" on-click="_clearAllClicked"></iron-icon>
         </div>
       </template>
     </div>
@@ -144,6 +144,15 @@ Header bar Polymer element for doing filters / faceted search.
       behaviors: [RadiumFilterBehavior],
 
       properties: {
+        /**
+         * Set to true to hide the clear all button.
+         *
+         * @type boolean
+         */
+        hideClearAllButton: {
+          type: Boolean,
+          value: false
+        },
         /**
          * Set to true to hide the filter label.
          *
