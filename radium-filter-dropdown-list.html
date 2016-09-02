@@ -108,8 +108,8 @@ Dropdown list filter component.
       _optionChange: function(e) {
         var option = e.detail;
 
-        if (option.label || option.value) {
-          var value = option.value || option.label;
+        if (option.value !== undefined || option.label) {
+          var value = (option.value !== undefined) ? option.value : option.label;
 
           this.value = (this.value || []).concat(value);
           this.fire('value-added', { value: value });
