@@ -429,7 +429,7 @@ Side Panel Polymer element for doing filters / faceted search.
       _inputChanged: function(e) {
         var wait = parseInt(e.currentTarget.getAttribute('data-debounce-wait'));
         var key = e.currentTarget.getAttribute('data-filter-key');
-        var value = e.detail.value;
+        var value = e.currentTarget.value;
         this.debounce('input', function() {
           if (value && value !== null && value !== '') {
             this.replaceTerm(key, value);
