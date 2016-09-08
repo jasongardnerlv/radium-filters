@@ -297,7 +297,7 @@ Side Panel Polymer element for doing filters / faceted search.
         input.setAttribute('data-filter-key', filter.key);
         input.setAttribute('data-debounce-wait', filter.debounce || 350);
         this._applyOptions(input, filter.options || {});
-        input.addEventListener('value-changed', this._inputChanged.bind(this));
+        input.addEventListener('change', this._inputChanged.bind(this));
         return input;
       },
 
