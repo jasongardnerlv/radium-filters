@@ -297,7 +297,7 @@ Side Panel Polymer element for doing filters / faceted search.
         input.setAttribute('data-filter-key', filter.key);
         input.setAttribute('data-debounce-wait', filter.debounce || 350);
         this._applyOptions(input, filter.options || {});
-        input.addEventListener('change', this._inputChanged.bind(this));
+        input.addEventListener('keyup', this._inputChanged.bind(this));
         return input;
       },
 
@@ -427,10 +427,11 @@ Side Panel Polymer element for doing filters / faceted search.
       },
 
       _inputChanged: function(e) {
-        var wait = parseInt(e.currentTarget.getAttribute('data-debounce-wait'));
-        var key = e.currentTarget.getAttribute('data-filter-key');
-        var value = e.currentTarget.value;
+        var input = e.currentTarget;
+        var wait = parseInt(input.getAttribute('data-debounce-wait'));
+        var key = input.getAttribute('data-filter-key');
         this.debounce('input', function() {
+          var value = input.value;
           if (value && value !== null && value !== '') {
             this.replaceTerm(key, value);
           }
