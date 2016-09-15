@@ -63,6 +63,11 @@ Autocomplete list filter component.
             return [];
           }
         },
+        minLength: {
+          type: Number,
+          value: 1,
+          observer: '_minLengthChanged'
+        },
         source: {
           type: Function,
           value: null
@@ -108,6 +113,10 @@ Autocomplete list filter component.
           return filterValue.value === value;
         });
         return (filterValue && filterValue.label) ? filterValue.label : value;
+      },
+
+      _minLengthChanged: function(e) {
+        this.$.autocomplete.minLength = this.minLength;
       },
 
       _valueChanged: function (e) {

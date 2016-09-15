@@ -213,7 +213,7 @@ Dropdown list filter autocomplete component..
       },
 
       executeQuery: function(query) {
-        if (query && query.length >= this.minLength && this.source) {
+        if (query !== null && query !== undefined && query.length >= this.minLength && this.source) {
           this.value = query;
           this._loading = true;
           this._suggestions = [];
