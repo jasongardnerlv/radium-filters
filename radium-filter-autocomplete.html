@@ -258,12 +258,14 @@ Dropdown list filter autocomplete component..
         this.cancelDebouncer('input');
         this._isDirty = false;
         this.fire('change');
+        this.fire('clear');
       },
 
       _onClearIconTap: function() {
         this.value = '';
         this.cancelDebouncer('input');
         this.fire('change');
+        this.fire('clear');
       },
 
       _onDropdownIronOverlayClosed: function() {
