@@ -52,6 +52,12 @@ Dropdown list filter autocomplete component..
       padding: 2px;
     }
 
+    #dropdownIcon {
+      position: absolute;
+      right: 0;
+      cursor: pointer;
+    }
+
     #dropdown {
       margin-top: 56px;
       background-color: #FFFFFF;
@@ -82,9 +88,10 @@ Dropdown list filter autocomplete component..
   </style>
   <template>
     <paper-input-container
-      id="inputContainer" tabindex="0"
+      id="inputContainer" tabindex="-1"
       disabled$="[[disabled]]"
       invalid="[[invalid]]" required="[[required]]"
+      on-down="_onInputContainerDown"
       always-float-label="[[alwaysFloatLabel]]" no-label-float="[[noLabelFloat]]">
       <label>[[label]]</label>
       <input
@@ -96,9 +103,13 @@ Dropdown list filter autocomplete component..
         id="clearIcon"
         icon="clear" hidden$="[[_isClearIconHidden(value)]]"
         on-tap="_onClearIconTap"></iron-icon>
+      <iron-icon
+        id="dropdownIcon"
+        icon="[[_getDropdownIcon(_open)]]" hidden$="[[_isDropdownIconHidden(value, minLength)]]">
+      </iron-icon>
       <paper-input-error>[[errorMessage]]</paper-input-error>
     </paper-input-container>
-    <iron-dropdown id="dropdown" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
+    <iron-dropdown id="dropdown" on-iron-overlay-opened="_onDropdownIronOverlayOpened" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
       <div class="dropdown-content">
         <template is="dom-if" if="[[_loading]]">
           <paper-item id="loadingItem">
@@ -215,6 +226,7 @@ Dropdown list filter autocomplete component..
 
       ready: function() {
         this._loading = false;
+        this._open = this.$.dropdown.opened;
         this._suggestions = [];
       },
 
@@ -228,6 +240,14 @@ Dropdown list filter autocomplete component..
           this.source(this.value, function(suggestions) {
             this._setSuggestions(suggestions);
           }.bind(this));
+        }
+      },
+
+      _getDropdownIcon: function(open) {
+        if (open) {
+          return 'arrow-drop-up';
+        } else {
+          return 'arrow-drop-down';
         }
       },
 
@@ -249,6 +269,10 @@ Dropdown list filter autocomplete component..
 
       _isClearIconHidden: function(query) {
         return ! (query && query.length > 0);
+      },
+
+      _isDropdownIconHidden: function(query, minLength) {
+        return (minLength > 0) && (query && query.length > 0);
       },
 
       _hasMatches: function(suggestions, loading) {
@@ -274,9 +298,25 @@ Dropdown list filter autocomplete component..
         this.fire('clear');
       },
 
+      _onDropdownIronOverlayOpened: function() {
+        this._open = true;
+      },
+
       _onDropdownIronOverlayClosed: function() {
+        this._open = false;
         if (this._isDirty && document.activeElement != this.$.input) {
           this._clear();
+        }
+      },
+
+      _onInputContainerDown: function() {
+        if (this.minLength === 0 && !this.value && !this.$.dropdown.opened) {
+          // Defer this slightly because underlying Polymer framework code will otherwise cancel the dropdown.
+          this.async(function() {
+            if (document.activeElement === this.$.inputContainer || document.activeElement === this.$.input) {
+              this.executeQuery(this.value);
+            }
+          }, 150);
         }
       },
 
