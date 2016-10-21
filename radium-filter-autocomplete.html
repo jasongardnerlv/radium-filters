@@ -314,7 +314,7 @@ Dropdown list filter autocomplete component..
           // Defer this slightly because underlying Polymer framework code will otherwise cancel the dropdown.
           this.async(function() {
             if (document.activeElement === this.$.inputContainer || document.activeElement === this.$.input) {
-              this.executeQuery(this.value);
+              this.executeQuery(this.value || '');
             }
           }, 150);
         }
