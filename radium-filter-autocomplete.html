@@ -272,7 +272,7 @@ Dropdown list filter autocomplete component..
       },
 
       _isDropdownIconHidden: function(query, minLength) {
-        return (minLength > 0) && (query && query.length > 0);
+        return Boolean((minLength > 0) || (query && query.length > 0));
       },
 
       _hasMatches: function(suggestions, loading) {
