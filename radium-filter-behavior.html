@@ -4,7 +4,8 @@
    *
    * @typedef {(
    *  label: (string),
-   *  value: (number|string)
+   *  value: (number|string),
+   *  data: (object)
    * )} FilterValue
    */
 
@@ -64,7 +65,7 @@
      * @param {string} label
      * @param {number|string} value
      */
-    replaceFilterValue: function(key, label, value) {
+    replaceFilterValue: function(key, label, value, data) {
       var filter = this.filters.find(function(filter) {
         return filter.key === key;
       });
@@ -73,7 +74,8 @@
           return !(filterValue.value == value);
         }).concat( {
           label: label,
-          value: value
+          value: value,
+          data: data
         });
       }
     },
