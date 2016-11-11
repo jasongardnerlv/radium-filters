@@ -128,7 +128,7 @@ Autocomplete list filter component.
 
         if (suggestion.label && suggestion.value) {
           this.value = (this.value || []).concat(suggestion.value);
-          this.fire('value-added', {label: suggestion.label, value: suggestion.value});
+          this.fire('value-added', { label: suggestion.label, value: suggestion.value, data: suggestion.data });
         }
       },
 
@@ -138,7 +138,7 @@ Autocomplete list filter component.
         this.value = (this.value || []).filter(function (value) {
           return value !== valueToRemove;
         });
-        this.fire('value-removed', {value: valueToRemove});
+        this.fire('value-removed', { value: valueToRemove });
       }
 
     });

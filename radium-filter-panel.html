@@ -244,14 +244,14 @@ Side Panel Polymer element for doing filters / faceted search.
                             });
                             if (suggestion) {
                               // Use the label/value returned as a suggestion as the new filter value.
-                              return {label: suggestion.label, value: suggestion.value};
+                              return {label: suggestion.label, value: suggestion.value, data: suggestion.data};
                             }
                             else {
                               // No corresponding suggestion was returned, check if we already have the filter value.
                               var filterValue = this.getFilterValueForTerm(term);
                               if (!filterValue) {
                                 // Create a new filter value, using the value as the label.
-                                return {label: term.value, value: term.value};
+                                return {label: term.value, value: term.value, data: undefined};
                               }
                               // Use the existing filter value.
                               return filterValue;
@@ -481,7 +481,8 @@ Side Panel Polymer element for doing filters / faceted search.
         var key = autocompleteList.getAttribute('data-filter-key');
         var label = e.detail.label;
         var value = e.detail.value;
-        this.replaceFilterValue(key, label, value);
+        var data = e.detail.data;
+        this.replaceFilterValue(key, label, value, data);
         this.addTerm(key, value);
       },
 
