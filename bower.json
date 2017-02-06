@@ -1,6 +1,6 @@
 {
   "name": "radium-filters",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Header bar and side panel Polymer elements for doing filters / faceted search",
   "authors": [
     "jason gardner <jason.gardner.lv@gmail.com>"
@@ -36,7 +36,7 @@
     "paper-input": "PolymerElements/paper-input#1.1.2",
     "paper-listbox": "PolymerElements/paper-listbox#1.1.0",
     "paper-spinner": "PolymerElements/paper-spinner#1.1.0",
-    "radium-combo": "jasongardnerlv/radium-combo#master"
+    "radium-combo": "jasongardnerlv/radium-combo#0.6.0"
   },
   "devDependencies": {
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
