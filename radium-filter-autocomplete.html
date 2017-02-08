@@ -301,6 +301,8 @@ Dropdown list filter autocomplete component..
       },
 
       _onClearIconTap: function() {
+        e.stopPropagation();
+        
         this.value = '';
         this.cancelDebouncer('input');
         this.fire('change');
@@ -372,6 +374,8 @@ Dropdown list filter autocomplete component..
       },
 
       _onSuggestionItemTap: function(e) {
+        e.stopPropagation();
+        
         var selectedSuggestion = this._suggestions[e.currentTarget.value];
         this.value = selectedSuggestion.label;
         this._isDirty = false;

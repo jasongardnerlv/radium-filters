@@ -139,7 +139,9 @@ Side Panel Polymer element for doing filters / faceted search.
           collapse.id = 'filter' + filterIndex;
           collapse.setAttribute('opened', 'true');
 
-          label.addEventListener('click', function() {
+          label.addEventListener('click', function(evt) {
+            evt.stopPropagation();
+            
             collapse.toggle();
           });
 
