@@ -40,7 +40,7 @@ Dropdown list filter component.
         <template is="dom-repeat" items="[[value]]">
           <div class="value-row">
             <div class="value-label" title="[[_getOptionLabelForValue(options, item)]]">[[_getOptionLabelForValue(options, item)]]</div>
-            <iron-icon icon="cancel" on-tap="_removeValueClick"></iron-icon>
+            <iron-icon icon="cancel" on-tap="_removeValueTap"></iron-icon>
           </div>
         </template>
       </div>
@@ -116,7 +116,9 @@ Dropdown list filter component.
         }
       },
 
-      _removeValueClick: function(e) {
+      _removeValueTap: function(e) {
+        e.stopPropagation();
+        
         var valueToRemove = e.model.__data__.item;
 
         this.value = (this.value || []).filter(function(value) {

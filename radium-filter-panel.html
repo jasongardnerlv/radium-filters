@@ -139,35 +139,37 @@ Side Panel Polymer element for doing filters / faceted search.
           collapse.id = 'filter' + filterIndex;
           collapse.setAttribute('opened', 'true');
 
-          label.addEventListener('click', function() {
+          label.addEventListener('click', function(evt) {
+            evt.stopPropagation();
+            
             collapse.toggle();
           });
 
           switch (filter.type) {
             case 'input':
-              collapse.appendChild(this._createInputControl(filter));
+              Polymer.dom(collapse).appendChild(this._createInputControl(filter));
               break;
 
             case 'dropdown':
-              collapse.appendChild(this._createDropdownControl(filter));
+              Polymer.dom(collapse).appendChild(this._createDropdownControl(filter));
               break;
 
             case 'checkboxlist':
               filter.values.forEach(function(value) {
-                collapse.appendChild(this._createCheckboxListControl(filter.key, value, filter.options));
+                Polymer.dom(collapse).appendChild(this._createCheckboxListControl(filter.key, value, filter.options));
               }.bind(this));
               break;
 
             case 'autocomplete':
-              collapse.appendChild(this._createAutocompleteControl(filter));
+              Polymer.dom(collapse).appendChild(this._createAutocompleteControl(filter));
               break;
 
             case 'autocompletelist':
-              collapse.appendChild(this._createAutocompleteListControl(filter));
+              Polymer.dom(collapse).appendChild(this._createAutocompleteListControl(filter));
               break;
 
             case 'dropdownlist':
-              collapse.appendChild(this._createDropdownListControl(filter));
+              Polymer.dom(collapse).appendChild(this._createDropdownListControl(filter));
               break;
 
             default:
@@ -175,11 +177,12 @@ Side Panel Polymer element for doing filters / faceted search.
               break;
           }
 
-          filterRow.appendChild(label);
-          filterRow.appendChild(collapse);
+          Polymer.dom(filterRow).appendChild(label);
+          Polymer.dom(filterRow).appendChild(collapse);
 
-          filterContainer.appendChild(filterRow);
+          Polymer.dom(filterContainer).appendChild(filterRow);
         }.bind(this));
+        Polymer.dom.flush();
       },
 
       _populateControls: function() {
@@ -316,8 +319,8 @@ Side Panel Polymer element for doing filters / faceted search.
         label.className += 'typo-body1';
         label.innerHTML = value.label;
 
-        checklist.appendChild(checkbox);
-        checklist.appendChild(label);
+        Polymer.dom(checklist).appendChild(checkbox);
+        Polymer.dom(checklist).appendChild(label);
 
         return checklist;
       },

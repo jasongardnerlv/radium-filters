@@ -193,11 +193,15 @@ Header bar Polymer element for doing filters / faceted search.
         }.bind(this));
       },
 
-      _clearAllClicked: function() {
+      _clearAllClicked: function(evt) {
+        evt.stopPropagation();
+        
         this.removeAllTerms();
       },
 
       _termClicked: function(evt) {
+        evt.stopPropagation();
+        
         var term = JSON.parse(evt.currentTarget.getAttribute('data-term'));
         this.removeTerm(term.key, term.value);
       }
