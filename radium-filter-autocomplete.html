@@ -300,7 +300,7 @@ Dropdown list filter autocomplete component..
         this.fire('clear');
       },
 
-      _onClearIconTap: function() {
+      _onClearIconTap: function(e) {
         e.stopPropagation();
         
         this.value = '';
