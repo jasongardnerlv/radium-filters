@@ -267,6 +267,11 @@ Dropdown list filter autocomplete component..
         if (this._suggestions.length > 0) {
           this.$.listbox.select();
         }
+
+        // Trigger the dropdown to refit (after browser reflow), in case it previously fit itself for loading indicator.
+        this.async(function(){
+          this.$.dropdown.refit();
+        }, 1);
       },
 
       _openDropdown: function() {
