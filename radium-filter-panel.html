@@ -141,7 +141,7 @@ Side Panel Polymer element for doing filters / faceted search.
 
           label.addEventListener('click', function(evt) {
             evt.stopPropagation();
-            
+
             collapse.toggle();
           });
 
@@ -170,6 +170,10 @@ Side Panel Polymer element for doing filters / faceted search.
 
             case 'dropdownlist':
               Polymer.dom(collapse).appendChild(this._createDropdownListControl(filter));
+              break;
+
+            case 'custom':
+              Polymer.dom(collapse).appendChild(this._createCustomControl(filter))
               break;
 
             default:
@@ -346,6 +350,14 @@ Side Panel Polymer element for doing filters / faceted search.
         return autocompleteList;
       },
 
+      _createCustomControl: function(filter) {
+        var custom = document.createElement(filter.tagName);
+        custom.setAttribute('data-filter-key', filter.key);
+        this._applyOptions(custom, filter.options || {});
+        custom.addEventListener(filter.changeEventName || 'change', this._customChanged.bind(this));
+        return custom;
+      },
+
       _createDropdownControl: function(filter) {
         var dropdown = document.createElement('radium-combo');
         dropdown.setAttribute('data-filter-key', filter.key);
@@ -398,7 +410,7 @@ Side Panel Polymer element for doing filters / faceted search.
             control.value = values;
             break;
           default:
-            console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
+            control.value = values[0] || null;
             break;
         }
       },
@@ -424,7 +436,7 @@ Side Panel Polymer element for doing filters / faceted search.
             control.value = [];
             break;
           default:
-            console.warn("Unknown filter node: " + control.nodeName.toLowerCase());
+            control.value = null;
             break;
         }
       },
@@ -494,6 +506,17 @@ Side Panel Polymer element for doing filters / faceted search.
         var key = autocompleteList.getAttribute('data-filter-key');
         var value = e.detail.value;
         this.removeTerm(key, value);
+      },
+
+      _customChanged: function(e) {
+        var key = e.currentTarget.getAttribute('data-filter-key');
+        var value = e.currentTarget.value;
+        if (value && value !== null && value !== '') {
+          this.replaceTerm(key, value);
+        }
+        else {
+          this.removeTerm(key);
+        }
       },
 
       _dropdownChanged: function(e) {
