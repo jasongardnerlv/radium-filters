@@ -16,6 +16,7 @@
    *  type: (string),
    *  label: (string),
    *  key: (string),
+   *  formatter: (?function),
    *  values: (Array<FilterValue>)
    * )} Filter
    */
@@ -183,6 +184,10 @@
      * @returns {number|string}
      */
     getLabelForTerm: function(term) {
+      var filter = this.getFilterForTerm(term);
+      if (filter && filter.formatter) {
+        return filter.formatter(term);
+      }
       var filterValue = this.getFilterValueForTerm(term);
       if (filterValue) {
         return filterValue.label;
