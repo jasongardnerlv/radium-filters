@@ -19,8 +19,12 @@
       border: 1px solid #cccccc;
       overflow: auto;
     }
-    #filter-results {
+    #filter-demo {
       padding: 0px 24px 24px;
+    }
+    #filter-demo button {
+      display: block;
+      margin: 8px 0;
     }
   </style>
 </head>
@@ -35,8 +39,18 @@
       <radium-filter-bar id="filterbar" label="Test" filters="[[_filters]]" terms="{{_terms}}" loading="{{_loading}}"></radium-filter-bar>
       <div>
         <template is="dom-if" if="[[!_loading]]">
-          <div id="filter-results">
+          <div id="filter-demo">
             <h2>radium-filters demo</h2>
+
+            <h3>Set type=hidden filter terms programmatically:</h3>
+            <button data-value="dev" on-tap="addDepartmentTerm">Add Development Department</button>
+            <button data-value="qa" on-tap="addDepartmentTerm">Add Quality Assurance Department</button>
+            <button data-value="sales" on-tap="addDepartmentTerm">Add Sales Department</button>
+
+            <h3>Results</h3>
+            <div style="text-decoration:underline"><b>Selected Departments</b></div>
+            <div>{{_selectedDepartments}}</div>
+            <br/>
             <div style="text-decoration:underline"><b>Selected Customer</b></div>
             <div>{{_selectedCustomer}}</div>
             <br/>
@@ -112,6 +126,7 @@
   app._terms = [];
 
   app._loading = false;
+  app._selectedDepartments = [];
   app._selectedCustomer = '';
   app._selectedAffiliates = [];
   app._selectedStates = [];
@@ -124,11 +139,29 @@
     '_termsChanged(_terms)'
   ];
 
+  app.addDepartmentTerm = function(evt) {
+    evt.stopPropagation();
+
+    var key = 'department';
+    var value = evt.currentTarget.getAttribute('data-value');
+
+    var existingTerm = this._terms.find(function(term) {
+      return (term.key === key && term.value === value);
+    });
+    if (!existingTerm) {
+      app._terms = app._terms.concat({
+        key: key,
+        value: value
+      });
+    }
+  };
+
   app._getTermLabel = function(term) {
     return this.$.filterbar.getLabelForTerm(term);
   };
 
   app._termsChanged = function () {
+    app._selectedDepartments = [];
     app._selectedCustomer = '';
     app._selectedAffiliates = [];
     app._selectedStates = [];
@@ -140,6 +173,9 @@
     app._terms.forEach(function(term) {
       var label = app._getTermLabel(term);
       switch (term.key) {
+        case 'department':
+          app.push('_selectedDepartments', label);
+          break;
         case 'customer':
           app._selectedCustomer = label;
           break;
@@ -166,6 +202,18 @@
   };
 
   app._filters = [
+    {
+      type: 'hidden',
+      label: 'Department',
+      key: 'department',
+      values: [
+        {label:'Development', value:'dev'},
+        {label:'Finance', value:'fin'},
+        {label:'Marketing', value:'mark'},
+        {label:'Quality Assurance', value:'qa'},
+        {label:'Sales', value:'sales'}
+      ]
+    },
     {
       type: 'autocomplete',
       label: 'Customer',
