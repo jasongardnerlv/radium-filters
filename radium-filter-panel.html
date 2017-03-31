@@ -127,6 +127,10 @@ Side Panel Polymer element for doing filters / faceted search.
           filterContainer.removeChild(filterContainer.lastChild);
         }
         this.filters.forEach(function(filter, filterIndex) {
+          if (filter.type === 'hidden') {
+            return;
+          }
+          
           var filterRow = document.createElement('div');
           filterRow.className += 'filter-row';
 
@@ -173,7 +177,7 @@ Side Panel Polymer element for doing filters / faceted search.
               break;
 
             case 'custom':
-              Polymer.dom(collapse).appendChild(this._createCustomControl(filter))
+              Polymer.dom(collapse).appendChild(this._createCustomControl(filter));
               break;
 
             default:
