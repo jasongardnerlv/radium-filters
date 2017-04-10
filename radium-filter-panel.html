@@ -77,6 +77,10 @@ Side Panel Polymer element for doing filters / faceted search.
       --paper-spinner-layer-3-color: var(--radium-filter-loading-spinner-color, #0072BC);
       --paper-spinner-layer-4-color: var(--radium-filter-loading-spinner-color, #0072BC);
     }
+
+    .filter-row[hidden] {
+      display: none;
+    }
   </style>
   <template>
     <div class="filter-wrapper">
@@ -127,12 +131,11 @@ Side Panel Polymer element for doing filters / faceted search.
           filterContainer.removeChild(filterContainer.lastChild);
         }
         this.filters.forEach(function(filter, filterIndex) {
-          if (filter.type === 'hidden') {
-            return;
-          }
-          
           var filterRow = document.createElement('div');
           filterRow.className += 'filter-row';
+          if (filter.hidden) {
+            filterRow.setAttribute('hidden', '');
+          }
 
           var label = document.createElement('div');
           label.innerHTML = filter.label;
