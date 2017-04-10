@@ -42,7 +42,7 @@
           <div id="filter-demo">
             <h2>radium-filters demo</h2>
 
-            <h3>Set type=hidden filter terms programmatically:</h3>
+            <h3>Set "hidden: true" filter terms programmatically:</h3>
             <button data-value="dev" on-tap="addDepartmentTerm">Add Development Department</button>
             <button data-value="qa" on-tap="addDepartmentTerm">Add Quality Assurance Department</button>
             <button data-value="sales" on-tap="addDepartmentTerm">Add Sales Department</button>
@@ -203,7 +203,7 @@
 
   app._filters = [
     {
-      type: 'hidden',
+      type: 'dropdown',
       label: 'Department',
       key: 'department',
       values: [
@@ -212,7 +212,8 @@
         {label:'Marketing', value:'mark'},
         {label:'Quality Assurance', value:'qa'},
         {label:'Sales', value:'sales'}
-      ]
+      ],
+      hidden: true
     },
     {
       type: 'autocomplete',
