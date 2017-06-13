@@ -46,7 +46,7 @@ Autocomplete list filter component.
           </div>
         </template>
       </div>
-      <radium-filter-autocomplete id="autocomplete" no-label-float on-selected="_onAutocompleteSelected">
+      <radium-filter-autocomplete id="autocomplete" no-label-float loading-message="[[loadingMessage]]" on-selected="_onAutocompleteSelected">
       </radium-filter-autocomplete>
     </div>
   </template>
@@ -62,6 +62,10 @@ Autocomplete list filter component.
           value: function () {
             return [];
           }
+        },
+        loadingMessage: {
+          type: String,
+          value: null
         },
         minLength: {
           type: Number,
@@ -135,7 +139,7 @@ Autocomplete list filter component.
 
       _removeValueTap: function (e) {
         e.stopPropagation();
-        
+
         var valueToRemove = e.model.__data__.item;
 
         this.value = (this.value || []).filter(function (value) {
