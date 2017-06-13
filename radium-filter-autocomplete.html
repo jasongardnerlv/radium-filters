@@ -72,7 +72,14 @@ Dropdown list filter autocomplete component..
       pointer-events: none;
     }
 
-    #loadingItem > div {
+    #loadingItem #loadingMessage {
+      width: 100%;
+      padding: 8px 8px 0 8px;
+      text-align: center;
+      overflow-wrap: break-word;
+    }
+
+    #loadingItem #loadingSpinnerWrapper {
       width: 100%;
       height: 64px;
     }
@@ -120,8 +127,9 @@ Dropdown list filter autocomplete component..
     <iron-dropdown id="dropdown" on-iron-overlay-opened="_onDropdownIronOverlayOpened" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
       <div class="dropdown-content">
         <template is="dom-if" if="[[_loading]]">
-          <paper-item id="loadingItem">
-            <div class="vertical center-center layout">
+          <paper-item id="loadingItem" class="vertical layout">
+            <div id="loadingMessage" hidden$="[[_isLoadingMessageHidden(loadingMessage)]]">[[loadingMessage]]</div>
+            <div id="loadingSpinnerWrapper" class="vertical center-center layout">
               <paper-spinner active="[[_loading]]"></paper-spinner>
             </div>
           </paper-item>
@@ -186,6 +194,13 @@ Dropdown list filter autocomplete component..
           type: String,
           value: null,
           reflectToAttribute: true
+        },
+        /**
+         * The optional loading message for this input.
+         */
+        loadingMessage: {
+          type: String,
+          value: null
         },
         /**
          * The minimum input length before triggering a query.
@@ -289,6 +304,10 @@ Dropdown list filter autocomplete component..
         return Boolean((minLength > 0) || (query && query.length > 0));
       },
 
+      _isLoadingMessageHidden: function(loadingMessage) {
+        return !Boolean(loadingMessage);
+      },
+
       _hasMatches: function(suggestions, loading) {
         return (!loading && suggestions.length > 0);
       },
@@ -307,7 +326,7 @@ Dropdown list filter autocomplete component..
 
       _onClearIconTap: function(e) {
         e.stopPropagation();
-        
+
         this.value = '';
         this.cancelDebouncer('input');
         this.fire('change');
@@ -380,7 +399,7 @@ Dropdown list filter autocomplete component..
 
       _onSuggestionItemTap: function(e) {
         e.stopPropagation();
-        
+
         var selectedSuggestion = this._suggestions[e.currentTarget.value];
         this.value = selectedSuggestion.label;
         this._isDirty = false;
