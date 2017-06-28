@@ -1,6 +1,6 @@
 {
   "name": "radium-filters",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "Header bar and side panel Polymer elements for doing filters / faceted search",
   "authors": [
     "jason gardner <jason.gardner.lv@gmail.com>"
