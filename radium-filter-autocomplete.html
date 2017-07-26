@@ -15,10 +15,6 @@ Dropdown list filter autocomplete component..
 -->
 <dom-module id="radium-filter-autocomplete">
   <style is="custom-style">
-    :host([no-label-float]) #dropdown {
-      margin-top: 36px;
-    }
-
     paper-input-container:focus {
       outline: 0;
     }
@@ -51,6 +47,10 @@ Dropdown list filter autocomplete component..
       height: 20px;
       padding: 2px;
     }
+    
+    paper-listbox {
+      padding: 0;
+    }
 
     paper-listbox paper-item {
       cursor: pointer;
@@ -63,7 +63,6 @@ Dropdown list filter autocomplete component..
     }
 
     #dropdown {
-      margin-top: 56px;
       background-color: #FFFFFF;
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
     }
@@ -124,7 +123,7 @@ Dropdown list filter autocomplete component..
       </iron-icon>
       <paper-input-error>[[errorMessage]]</paper-input-error>
     </paper-input-container>
-    <iron-dropdown id="dropdown" on-iron-overlay-opened="_onDropdownIronOverlayOpened" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
+    <iron-dropdown id="dropdown" vertical-align="auto" no-overlap on-iron-overlay-opened="_onDropdownIronOverlayOpened" on-iron-overlay-closed="_onDropdownIronOverlayClosed">
       <div class="dropdown-content">
         <template is="dom-if" if="[[_loading]]">
           <paper-item id="loadingItem" class="vertical layout">
