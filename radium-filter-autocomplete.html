@@ -142,7 +142,7 @@ Dropdown list filter autocomplete component..
           <template is="dom-if" if="[[_hasMatches(_suggestions, _loading)]]">
             <template is="dom-repeat" items="[[_suggestions]]">
               <paper-item value="[[index]]" on-touchend="_onSuggestionItemTouchEnd" on-tap="_onSuggestionItemTap">
-                <span title$="[[item.label]]">[[item.label]]</span>
+                <span title$="[[_getSuggestionItemLabel(item)]]">[[_getSuggestionItemLabel(item)]]</span>
               </paper-item>
             </template>
           </template>
@@ -272,6 +272,10 @@ Dropdown list filter autocomplete component..
         } else {
           return 'arrow-drop-down';
         }
+      },
+
+      _getSuggestionItemLabel: function(item) {
+        return (item.suggestionLabel) ? item.suggestionLabel : item.label;
       },
 
       _setSuggestions: function(suggestions) {
