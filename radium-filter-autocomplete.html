@@ -361,6 +361,7 @@ Dropdown list filter autocomplete component..
       _onInputBlur: function() {
         if (this._isDirty && !this.$.dropdown.opened) {
           this._clear();
+          this.fire('blur');
         }
       },
 
