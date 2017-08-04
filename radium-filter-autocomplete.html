@@ -342,8 +342,11 @@ Dropdown list filter autocomplete component..
 
       _onDropdownIronOverlayClosed: function() {
         this._open = false;
-        if (this._isDirty && document.activeElement != this.$.input) {
-          this._clear();
+        if (document.activeElement !== this.$.input) {
+          if (this._isDirty) {
+            this._clear();
+          }
+          this.fire('blur');
         }
       },
 
@@ -359,8 +362,10 @@ Dropdown list filter autocomplete component..
       },
 
       _onInputBlur: function() {
-        if (this._isDirty && !this.$.dropdown.opened) {
-          this._clear();
+        if (!this.$.dropdown.opened) {
+          if (this._isDirty) {
+            this._clear();
+          }
           this.fire('blur');
         }
       },
