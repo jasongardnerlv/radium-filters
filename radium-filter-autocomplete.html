@@ -47,7 +47,7 @@ Dropdown list filter autocomplete component..
       height: 20px;
       padding: 2px;
     }
-    
+
     paper-listbox {
       padding: 0;
     }
@@ -83,14 +83,29 @@ Dropdown list filter autocomplete component..
       height: 64px;
     }
 
-    paper-item span {
+    paper-item:hover {
+      background-color: #EEEEEE;
+    }
+
+    .list-item-label-container,
+    .list-item-prefix,
+    .list-item-label,
+    .list-item-suffix {
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow-x: hidden;
     }
 
-    paper-item:hover {
-      background-color: #EEEEEE;
+    .list-item-prefix,
+    .list-item-suffix {
+      color: #727272;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .list-item-label {
+      font-size: 14px;
+      line-height: 20px;
     }
 
     paper-spinner {
@@ -142,7 +157,11 @@ Dropdown list filter autocomplete component..
           <template is="dom-if" if="[[_hasMatches(_suggestions, _loading)]]">
             <template is="dom-repeat" items="[[_suggestions]]">
               <paper-item value="[[index]]" on-touchend="_onSuggestionItemTouchEnd" on-tap="_onSuggestionItemTap">
-                <span title$="[[_getSuggestionItemLabel(item)]]">[[_getSuggestionItemLabel(item)]]</span>
+                <div class="list-item-label-container vertical layout">
+                  <div class="list-item-prefix" title$="[[_getSuggestionItemPrefix(item)]]">[[_getSuggestionItemPrefix(item)]]</div>
+                  <div class="list-item-label" title$="[[_getSuggestionItemLabel(item)]]">[[_getSuggestionItemLabel(item)]]</div>
+                  <div class="list-item-suffix" title$="[[_getSuggestionItemSuffix(item)]]">[[_getSuggestionItemSuffix(item)]]</div>
+                </div>
               </paper-item>
             </template>
           </template>
@@ -274,8 +293,16 @@ Dropdown list filter autocomplete component..
         }
       },
 
+      _getSuggestionItemPrefix: function(item) {
+        return (item.prefix) ? item.prefix : null;
+      },
+
       _getSuggestionItemLabel: function(item) {
         return (item.suggestionLabel) ? item.suggestionLabel : item.label;
+      },
+
+      _getSuggestionItemSuffix: function(item) {
+        return (item.suffix) ? item.suffix : null;
       },
 
       _setSuggestions: function(suggestions) {

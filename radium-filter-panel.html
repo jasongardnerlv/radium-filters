@@ -258,14 +258,14 @@ Side Panel Polymer element for doing filters / faceted search.
                             });
                             if (suggestion) {
                               // Use the label/value returned as a suggestion as the new filter value.
-                              return {label: suggestion.label, value: suggestion.value, data: suggestion.data};
+                              return { prefix: suggestion.prefix, label: suggestion.label, suffix: suggestion.suffix, value: suggestion.value, data: suggestion.data };
                             }
                             else {
                               // No corresponding suggestion was returned, check if we already have the filter value.
                               var filterValue = this.getFilterValueForTerm(term);
                               if (!filterValue) {
                                 // Create a new filter value, using the value as the label.
-                                return {label: term.value, value: term.value, data: undefined};
+                                return { prefix: term.prefix, label: term.value, suffix: term.suffix, value: term.value, data: undefined };
                               }
                               // Use the existing filter value.
                               return filterValue;
@@ -486,10 +486,12 @@ Side Panel Polymer element for doing filters / faceted search.
       _autocompleteSelected: function(e) {
         var autocomplete = e.currentTarget;
         var key = autocomplete.getAttribute('data-filter-key');
+        var prefix = e.detail.prefix;
         var label = e.detail.label;
+        var suffix = e.detail.suffix;
         var value = e.detail.value;
         if (value) {
-          this.setFilterValues(key, [{ label: label, value: value }]);
+          this.setFilterValues(key, [{ prefix: prefix, label: label, suffix: suffix, value: value }]);
           this.replaceTerm(key, value);
         }
         else {
@@ -501,10 +503,12 @@ Side Panel Polymer element for doing filters / faceted search.
       _autocompleteListValueAdded: function(e) {
         var autocompleteList = e.currentTarget;
         var key = autocompleteList.getAttribute('data-filter-key');
+        var prefix = e.detail.prefix;
         var label = e.detail.label;
+        var suffix = e.detail.suffix;
         var value = e.detail.value;
         var data = e.detail.data;
-        this.replaceFilterValue(key, label, value, data);
+        this.replaceFilterValue(key, prefix, label, suffix, value, data);
         this.addTerm(key, value);
       },
 
