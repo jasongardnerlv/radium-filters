@@ -3,7 +3,9 @@
    * Filter value.
    *
    * @typedef {(
+   *  prefix: (?string)
    *  label: (string),
+   *  suffix: (?string)
    *  value: (number|string),
    *  data: (object)
    * )} FilterValue
@@ -67,7 +69,7 @@
      * @param {string} label
      * @param {number|string} value
      */
-    replaceFilterValue: function(key, label, value, data) {
+    replaceFilterValue: function(key, prefix, label, suffix, value, data) {
       var filter = this.filters.find(function(filter) {
         return filter.key === key;
       });
@@ -75,7 +77,9 @@
         filter.values = (filter.values || []).filter(function(filterValue) {
           return !(filterValue.value == value);
         }).concat( {
+          prefix: prefix,
           label: label,
+          suffix: suffix,
           value: value,
           data: data
         });
@@ -182,6 +186,20 @@
      * Gets the label that corresponds to the specified term (if available), or returns the term value.
      *
      * @param {FilterTerm} term
+     * @returns {number|string|null}
+     */
+    getPrefixForTerm: function(term) {
+      var filterValue = this.getFilterValueForTerm(term);
+      if (filterValue) {
+        return filterValue.prefix;
+      }
+      return null;
+    },
+
+    /**
+     * Gets the label that corresponds to the specified term (if available), or returns the term value.
+     *
+     * @param {FilterTerm} term
      * @returns {number|string}
      */
     getLabelForTerm: function(term) {
@@ -194,6 +212,20 @@
         return filterValue.label;
       }
       return term.value;
+    },
+
+    /**
+     * Gets the label that corresponds to the specified term (if available), or returns the term value.
+     *
+     * @param {FilterTerm} term
+     * @returns {number|string|null}
+     */
+    getSuffixForTerm: function(term) {
+      var filterValue = this.getFilterValueForTerm(term);
+      if (filterValue) {
+        return filterValue.suffix;
+      }
+      return null;
     },
 
     /**

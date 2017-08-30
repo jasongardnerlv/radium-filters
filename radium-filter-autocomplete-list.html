@@ -11,39 +11,89 @@ Autocomplete list filter component.
 -->
 <dom-module id="radium-filter-autocomplete-list">
   <style is="custom-style">
-    .value-row {
+    #selectedChipsContainer {
+      margin: 0 -4px;
+    }
+
+    .chip {
+      background-color: #E0E0E0;
+      border-radius: 16px;
+      cursor: pointer;
+      height: 32px;
+      line-height: 20px;
       margin: 4px 0;
+      padding: 0 6px 0 12px;
+      text-transform: none;
+    }
+
+    .chip-content {
+      width: 100%;
+    }
+
+    .chip-label-container {
+      width: calc(100% - 20px);
+    }
+
+    .chip-label-prefix,
+    .chip-label,
+    .chip-label-suffix {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow-x: hidden;
+    }
+
+    .chip-label-prefix,
+    .chip-label-suffix {
+      color: #727272;
+      font-size: 9px;
+      line-height: 11px;
+    }
+
+    .chip-label {
+      font-size: 14px;
       line-height: 20px;
     }
 
-    .value-row .value-label {
-      display: inline-block;
-      width: calc(100% - 24px);
-      font-size: 14px;
-      font-weight: 400;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      vertical-align: middle;
+    .chip-label[has-prefix-or-suffix] {
+      font-size: 12px;
+      line-height: 14px;
     }
 
-    .value-row iron-icon {
-      width: 18px;
-      height: 18px;
-      vertical-align: middle;
+    .chip-cancel-icon {
+      color: #9E9E9E;
+      width: 20px;
+      height: 20px;
       cursor: pointer;
+    }
+
+    .chip:hover {
+      background-color: #616161;
+    }
+    .chip:hover .chip-label {
+      color: #ffffff;
+    }
+    .chip:hover .chip-label-prefix,
+    .chip:hover .chip-label-suffix {
+      color: #bdbdbd;
+    }
+    .chip:hover .chip-cancel-icon {
+      color: #ffffff;
     }
   </style>
   <template>
-    <div class="dropdown-list vertical layout">
-      <div class="vertical layout">
+    <div class="vertical layout">
+      <div id="selectedChipsContainer" class="vertical layout">
         <template is="dom-repeat" items="[[value]]">
-          <div class="value-row">
-            <div class="value-label" title="[[_getFilterValueLabelForValue(filterValues, item)]]">
-              [[_getFilterValueLabelForValue(filterValues, item)]]
+          <paper-button class="chip" on-tap="_chipTap">
+            <div class="chip-content horizontal layout center">
+              <div class="chip-label-container vertical layout">
+                <div class="chip-label-prefix" title$="[[_getFilterValuePrefixForValue(filterValues, item)]]">[[_getFilterValuePrefixForValue(filterValues, item)]]</div>
+                <div class="chip-label" has-prefix-or-suffix$="[[_hasFilterValuePrefixOrSuffixForValue(filterValues, item)]]" title$="[[_getFilterValueLabelForValue(filterValues, item)]]">[[_getFilterValueLabelForValue(filterValues, item)]]</div>
+                <div class="chip-label-suffix" title$="[[_getFilterValueSuffixForValue(filterValues, item)]]">[[_getFilterValueSuffixForValue(filterValues, item)]]</div>
+              </div>
+              <iron-icon class="chip-cancel-icon" icon="cancel"></iron-icon>
             </div>
-            <iron-icon icon="cancel" on-tap="_removeValueTap"></iron-icon>
-          </div>
+          </paper-button>
         </template>
       </div>
       <radium-filter-autocomplete id="autocomplete" no-label-float loading-message="[[loadingMessage]]" on-selected="_onAutocompleteSelected">
@@ -113,11 +163,29 @@ Autocomplete list filter component.
         }
       },
 
+      _getFilterValuePrefixForValue: function (filterValues, value) {
+        var filterValue = (filterValues || []).find(function (filterValue) {
+          return filterValue.value === value;
+        });
+        return (filterValue && filterValue.prefix) ? filterValue.prefix : null;
+      },
+
       _getFilterValueLabelForValue: function (filterValues, value) {
         var filterValue = (filterValues || []).find(function (filterValue) {
           return filterValue.value === value;
         });
         return (filterValue && filterValue.label) ? filterValue.label : value;
+      },
+
+      _getFilterValueSuffixForValue: function (filterValues, value) {
+        var filterValue = (filterValues || []).find(function (filterValue) {
+          return filterValue.value === value;
+        });
+        return (filterValue && filterValue.suffix) ? filterValue.suffix : null;
+      },
+
+      _hasFilterValuePrefixOrSuffixForValue: function(filterValues, value) {
+        return (this._getFilterValueSuffixForValue(filterValues, value) !== null);
       },
 
       _minLengthChanged: function(e) {
@@ -133,11 +201,11 @@ Autocomplete list filter component.
 
         if (suggestion.label && suggestion.value) {
           this.value = (this.value || []).concat(suggestion.value);
-          this.fire('value-added', { label: suggestion.label, value: suggestion.value, data: suggestion.data });
+          this.fire('value-added', { prefix: suggestion.prefix, label: suggestion.label, suffix: suggestion.suffix, value: suggestion.value, data: suggestion.data });
         }
       },
 
-      _removeValueTap: function (e) {
+      _chipTap: function (e) {
         e.stopPropagation();
 
         var valueToRemove = e.model.__data__.item;

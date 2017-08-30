@@ -57,28 +57,55 @@ Header bar Polymer element for doing filters / faceted search.
       max-width: calc(100% - 20px);
       margin: 0;
     }
-    .filterbar paper-button .chip-label {
+    .filterbar paper-button .chip-label-container {
       font-size: 14px;
       font-weight: 400;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .filterbar paper-button .chip-label .filter-label {
+    .filterbar paper-button .chip-label-container .filter-label {
       font-weight: 500;
+      padding-right: 6px;
     }
-    .filterbar paper-button iron-icon {
+    .filterbar paper-button .chip-term-label-container .term-label-prefix,
+    .filterbar paper-button .chip-term-label-container .term-label,
+    .filterbar paper-button .chip-term-label-container .term-label-suffix {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow-x: hidden;
+    }
+    .filterbar paper-button .chip-term-label-container .term-label-prefix,
+    .filterbar paper-button .chip-term-label-container .term-label-suffix {
+      color: #727272;
+      font-size: 9px;
+      line-height: 11px;
+    }
+    .filterbar paper-button .chip-term-label-container .term-label {
+      font-size: 14px;
+      line-height: 20px;
+    }
+    .filterbar paper-button .chip-term-label-container .term-label[has-prefix-or-suffix] {
+      font-size: 12px;
+      line-height: 14px;
+    }
+    .filterbar paper-button .chip-cancel-icon {
       color: #9E9E9E;
       width: 20px;
       height: 20px;
       margin-top: -2px;
       line-height: 14px;
     }
+
     .filterbar paper-button:hover {
       color: #ffffff;
       background-color: #616161;
     }
-    .filterbar paper-button:hover iron-icon {
+    .filterbar paper-button:hover .chip-term-label-container .term-label-prefix,
+    .filterbar paper-button:hover .chip-term-label-container .term-label-suffix {
+      color: #bdbdbd;
+    }
+    .filterbar paper-button:hover .chip-cancel-icon {
       color: #ffffff;
     }
 
@@ -118,13 +145,15 @@ Header bar Polymer element for doing filters / faceted search.
           <div class="horizontal layout wrap">
             <template is="dom-repeat" items="[[_getChipsForFiltersAndTerms(filters, terms)]]">
               <paper-button data-term$="[[item]]" on-click="_termClicked">
-                <div class="chip-label-container">
-                  <span class="chip-label">
-                    <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
-                    <span class="term-label">[[item.label]]</span>
-                  </span>
+                <div class="chip-label-container horizontal layout center">
+                  <span class="filter-label" hidden$="[[hideFilterLabel]]">[[item.filterLabel]]:</span>
+                  <div class="chip-term-label-container vertical layout">
+                    <div class="term-label-prefix">[[item.prefix]]</div>
+                    <div class="term-label" has-prefix-or-suffix$="[[_hasPrefixOrSuffix(item)]]">[[item.label]]</div>
+                    <div class="term-label-suffix">[[item.suffix]]</div>
+                  </div>
                 </div>
-                <iron-icon icon="cancel"></iron-icon>
+                <iron-icon class="chip-cancel-icon" icon="cancel"></iron-icon>
               </paper-button>
             </template>
           </div>
@@ -186,22 +215,28 @@ Header bar Polymer element for doing filters / faceted search.
         return this.terms.map(function(term){
           return {
             filterLabel: this.getFilterLabelForTerm(term),
+            prefix: this.getPrefixForTerm(term),
             label: this.getLabelForTerm(term),
+            suffix: this.getSuffixForTerm(term),
             key: term.key,
             value: term.value
           }
         }.bind(this));
       },
 
+      _hasPrefixOrSuffix: function(item) {
+        return Boolean(item.prefix || item.suffix);
+      },
+
       _clearAllClicked: function(evt) {
         evt.stopPropagation();
-        
+
         this.removeAllTerms();
       },
 
       _termClicked: function(evt) {
         evt.stopPropagation();
-        
+
         var term = JSON.parse(evt.currentTarget.getAttribute('data-term'));
         this.removeTerm(term.key, term.value);
       }

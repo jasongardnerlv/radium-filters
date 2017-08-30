@@ -11,37 +11,51 @@ Dropdown list filter component.
 -->
 <dom-module id="radium-filter-dropdown-list">
   <style is="custom-style">
-    .value-row {
+    #selectedChipsContainer {
+      margin: 0 -4px;
+    }
+
+    .chip {
+      background-color: #E0E0E0;
+      border-radius: 16px;
+      cursor: pointer;
+      height: 32px;
+      line-height: 20px;
       margin: 4px 0;
+      padding: 0 6px 0 12px;
+      text-transform: none;
+    }
+
+    .chip-content {
+      width: 100%;
+    }
+
+    .chip-label {
+      width: calc(100% - 20px);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow-x: hidden;
+      font-size: 14px;
       line-height: 20px;
     }
 
-    .value-row .value-label {
-      display: inline-block;
-      width: calc(100% - 24px);
-      font-size: 14px;
-      font-weight: 400;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      vertical-align: middle;
-    }
-
-    .value-row iron-icon {
-      width: 18px;
-      height: 18px;
-      vertical-align: middle;
+    .chip-cancel-icon {
+      color: #9E9E9E;
+      width: 20px;
+      height: 20px;
       cursor: pointer;
     }
   </style>
   <template>
-    <div class="dropdown-list vertical layout">
-      <div class="vertical layout">
+    <div class="vertical layout">
+      <div id="selectedChipsContainer" class="vertical layout">
         <template is="dom-repeat" items="[[value]]">
-          <div class="value-row">
-            <div class="value-label" title="[[_getOptionLabelForValue(options, item)]]">[[_getOptionLabelForValue(options, item)]]</div>
-            <iron-icon icon="cancel" on-tap="_removeValueTap"></iron-icon>
-          </div>
+          <paper-button class="chip" on-tap="_chipTap">
+            <div class="chip-content horizontal layout center">
+              <div class="chip-label" title="[[_getOptionLabelForValue(options, item)]]">[[_getOptionLabelForValue(options, item)]]</div>
+              <iron-icon class="chip-cancel-icon" icon="cancel"></iron-icon>
+            </div>
+          </paper-button>
         </template>
       </div>
       <radium-combo id="combo" type="[[type]]" options="[[_getFilteredListOptions(options, value)]]" include-empty="false" no-label-float on-option-change="_optionChange"></radium-combo>
@@ -116,9 +130,9 @@ Dropdown list filter component.
         }
       },
 
-      _removeValueTap: function(e) {
+      _chipTap: function(e) {
         e.stopPropagation();
-        
+
         var valueToRemove = e.model.__data__.item;
 
         this.value = (this.value || []).filter(function(value) {
